@@ -6,12 +6,38 @@ project(
         DESCRIPTION "HCE Community Engine"
         LANGUAGES CXX)
 
-add_executable(clockwork src/main.cpp src/uci.cpp src/uci.hpp src/util/types.h)
+set(CMAKE_CXX_STANDARD 20)
+include_directories(src)
 
+enable_testing()
+set(CMAKE_SKIP_TEST_ALL_DEPENDENCY FALSE)
+function(do_test name)
+  add_executable(test_${name} tests/test_${name}.cpp ${srcs})
+  add_test(${name} test_${name})
+endfunction()
+
+# Keep list sorted
+set(srcs
+    src/util/vec/avx512.hpp
+    src/util/types.hpp
+    src/util/vec.hpp
+    src/movegen.h
+    src/movegen.cpp
+    src/position.cpp
+    src/uci.cpp
+    src/uci.hpp
+    src/common.hpp
+    src/position.hpp
+    src/square.hpp
+    src/board.hpp
+)
+
+add_executable(clockwork ${srcs} src/main.cpp)
 set_target_properties(clockwork PROPERTIES
-    CXX_STANDARD 20
     CXX_STANDARD_REQUIRED YES
     CXX_EXTENSIONS NO)
+
+do_test(position)
 
 # Warnings
 # We don't support MSVC
