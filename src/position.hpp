@@ -21,7 +21,7 @@ union alignas(16) PieceList {
     constexpr T  operator[](PieceId id) const { return array[id.raw]; }
 
     u16 maskEq(PieceType ptype) const {
-        return v128::test8(raw, v128::broadcast8(static_cast<u8>(ptype)));
+        return v128::eq8(raw, v128::broadcast8(static_cast<u8>(ptype)));
     }
 
     constexpr bool operator==(const PieceList& other) const { return array == other.array; }
@@ -71,6 +71,10 @@ struct Position {
     RookInfo                 rookInfo(Color color) const { return m_rook_info[(int) color]; }
 
     Square kingSq(Color color) const { return pieceListSq(color)[PieceId{0}]; }
+
+    bool isValid() const {
+        return attackTable(m_active_color)[kingSq(invert(m_active_color))] == 0;
+    }
 
     Position move(Move m) const;
 

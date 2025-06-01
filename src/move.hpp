@@ -5,8 +5,11 @@
 #include "common.hpp"
 
 #include <optional>
+#include <string_view>
 
 namespace Clockwork {
+
+struct Position;
 
 static_assert(static_cast<u16>(PieceType::knight) == 2);
 
@@ -29,6 +32,8 @@ enum class MoveFlags : u16 {
 
 struct Move {
     u16 raw;
+
+    constexpr Move() = default;
 
     constexpr Move(Square from, Square to, MoveFlags flags = MoveFlags::normal) {
         raw = from.raw | (to.raw << 6) | static_cast<u16>(flags);
@@ -60,6 +65,8 @@ struct Move {
         }
     }
 
+    static std::optional<Move> parse(std::string_view str, const Position& context);
+
     friend std::ostream& operator<<(std::ostream& os, Move mv) {
         os << mv.from();
 
@@ -70,7 +77,7 @@ struct Move {
                 os << 'c';
             else
                 os << 'g';
-            os << mv.to().rank();
+            os << mv.to().rank() + 1;
         }
         else
         {

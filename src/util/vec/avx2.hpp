@@ -51,23 +51,23 @@ union v128 {
         const v128 y = permute8(index, c);
         const v128 z = permute8(index, d);
 
-        const v128 mask0 = shr16(index, 1);
-        const v128 mask1 = shr16(index, 2);
+        const v128 mask0 = shl16(index, 2);
+        const v128 mask1 = shl16(index, 3);
 
         return blend8(mask0, blend8(mask1, w, x), blend8(mask1, y, z));
     }
 
-    static forceinline v128 shr16(v128 a, int shift) { return {_mm_srli_epi16(a.raw, shift)}; }
+    static forceinline v128 shl16(v128 a, int shift) { return {_mm_slli_epi16(a.raw, shift)}; }
 
-    static forceinline u16 test8(v128 a, v128 b) {
+    static forceinline u16 eq8(v128 a, v128 b) {
         return static_cast<u16>(_mm_movemask_epi8(_mm_cmpeq_epi8(a.raw, b.raw)));
     }
 
-    static forceinline u16 testn8(v128 a, v128 b) {
+    static forceinline u16 neq8(v128 a, v128 b) {
         return static_cast<u16>(~_mm_movemask_epi8(_mm_cmpeq_epi8(a.raw, b.raw)));
     }
 
-    forceinline u16 nonzero8() const { return testn8(*this, zero()); }
+    forceinline u16 nonzero8() const { return neq8(*this, zero()); }
 
     forceinline auto operator==(const v128& other) const -> bool {
         const __m128i t = _mm_xor_si128(raw, other.raw);
@@ -123,17 +123,17 @@ union v256 {
                     v128::permute8(index.o[1], a.o[0], a.o[1], b.o[0], b.o[1])};
     }
 
-    static forceinline v256 shr16(v256 a, int shift) { return {_mm256_slli_epi16(a.raw, shift)}; }
+    static forceinline v256 shr16(v256 a, int shift) { return {_mm256_srli_epi16(a.raw, shift)}; }
 
-    static forceinline u32 test8(v256 a, v256 b) {
+    static forceinline u32 eq8(v256 a, v256 b) {
         return static_cast<u32>(_mm256_movemask_epi8(_mm256_cmpeq_epi8(a.raw, b.raw)));
     }
 
-    static forceinline u32 testn8(v256 a, v256 b) {
+    static forceinline u32 neq8(v256 a, v256 b) {
         return static_cast<u32>(~_mm256_movemask_epi8(_mm256_cmpeq_epi8(a.raw, b.raw)));
     }
 
-    static forceinline u16 testn16(v256 a, v256 b) {
+    static forceinline u16 neq16(v256 a, v256 b) {
         return static_cast<u16>(_pext_u32(
           static_cast<u32>(~_mm256_movemask_epi8(_mm256_cmpeq_epi16(a.raw, b.raw))), 0xAAAAAAAA));
     }
@@ -182,7 +182,7 @@ union v512 {
         return v512{v256::broadcast64(x), v256::broadcast64(x)};
     }
 
-    static forceinline v512 from128(v128 a) { return v512{v256::from128(a), {}}; }
+    static forceinline v512 from128(v128 a) { return v512{v256::from128(a), v256::zero()}; }
 
     forceinline v128 to128() const { return raw[0].to128(); }
 
@@ -192,7 +192,7 @@ union v512 {
 
     static forceinline v512 compress8(u64 m, v512 a) {
         // TODO: Slow
-        v512 result{};
+        v512 result = zero();
         for (int i = 0; m != 0; i++, m &= m - 1)
             result.b[i] = a.b[std::countr_zero(m)];
         return result;
@@ -211,22 +211,24 @@ union v512 {
         return v512{v256::shr16(a.raw[0], shift), v256::shr16(a.raw[1], shift)};
     }
 
-    static forceinline u64 test8(v512 a, v512 b) {
-        return concat64(v256::test8(a.raw[0], b.raw[0]), v256::test8(a.raw[1], b.raw[1]));
+    static forceinline u64 eq8(v512 a, v512 b) {
+        return concat64(v256::eq8(a.raw[0], b.raw[0]), v256::eq8(a.raw[1], b.raw[1]));
     }
 
-    static forceinline u64 testn8(v512 a, v512 b) {
-        return concat64(v256::testn8(a.raw[0], b.raw[0]), v256::testn8(a.raw[1], b.raw[1]));
+    static forceinline u64 neq8(v512 a, v512 b) {
+        return concat64(v256::neq8(a.raw[0], b.raw[0]), v256::neq8(a.raw[1], b.raw[1]));
     }
 
-    static forceinline u32 testn16(v512 a, v512 b) {
-        return concat32(v256::testn16(a.raw[0], b.raw[0]), v256::testn16(a.raw[1], b.raw[1]));
+    static forceinline u32 neq16(v512 a, v512 b) {
+        return concat32(v256::neq16(a.raw[0], b.raw[0]), v256::neq16(a.raw[1], b.raw[1]));
     }
+
+    static forceinline u64 testn8(v512 a, v512 b) { return (a & b).zero8(); }
 
     forceinline u64 msb8() const { return concat64(raw[0].msb8(), raw[1].msb8()); }
-    forceinline u64 zero8() const { return test8(*this, zero()); }
-    forceinline u64 nonzero8() const { return testn8(*this, zero()); }
-    forceinline u32 nonzero16() const { return testn16(*this, zero()); }
+    forceinline u64 zero8() const { return eq8(*this, zero()); }
+    forceinline u64 nonzero8() const { return neq8(*this, zero()); }
+    forceinline u32 nonzero16() const { return neq16(*this, zero()); }
 
     friend forceinline v512 operator&(v512 a, v512 b) {
         return v512{a.raw[0] & b.raw[0], a.raw[1] & b.raw[1]};

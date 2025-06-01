@@ -20,21 +20,26 @@ endfunction()
 
 # Keep list sorted
 set(srcs
-  src/util/vec/avx512.hpp
-  src/util/vec/avx2.hpp
+  src/board.cpp
+  src/board.hpp
+  src/common.hpp
+  src/geometry.hpp
+  src/move.cpp
+  src/move.hpp
+  src/movegen.cpp
+  src/movegen.hpp
+  src/perft.cpp
+  src/perft.hpp
+  src/position.cpp
+  src/position.hpp
+  src/square.hpp
+  src/uci.cpp
+  src/uci.hpp
   src/util/static_vector.hpp
   src/util/types.hpp
   src/util/vec.hpp
-  src/movegen.hpp
-  src/movegen.cpp
-  src/uci.cpp
-  src/uci.hpp
-  src/square.hpp
-  src/position.hpp
-  src/board.hpp
-  src/common.hpp
-  src/position.cpp
-  src/geometry.hpp
+  src/util/vec/avx2.hpp
+  src/util/vec/avx512.hpp
 )
 
 add_executable(clockwork ${srcs} src/main.cpp)
@@ -42,6 +47,7 @@ set_target_properties(clockwork PROPERTIES
     CXX_STANDARD_REQUIRED YES
     CXX_EXTENSIONS NO)
 
+do_test(test_perft)
 do_test(test_position)
 
 # Warnings

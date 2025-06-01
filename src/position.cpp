@@ -3,6 +3,9 @@
 #include <array>
 #include <bit>
 #include <sstream>
+#include <iostream>
+
+#include <iomanip>  // dbg
 
 #include "board.hpp"
 #include "geometry.hpp"
@@ -43,8 +46,8 @@ Position Position::move(Move m) const {
         if (src.ptype() == PieceType::pawn)
         {
             new_pos.m_50mr = 0;
-            if (dst.raw - src.raw == 16 || src.raw - dst.raw == 16)
-                new_pos.m_enpassant = Square(static_cast<u8>((src.raw + dst.raw) / 2));
+            if (from.raw - to.raw == 16 || to.raw - from.raw == 16)
+                new_pos.m_enpassant = Square(static_cast<u8>((from.raw + to.raw) / 2));
         }
         else
         {
@@ -63,13 +66,13 @@ Position Position::move(Move m) const {
         check_dst_castling_rights();
         break;
     case MoveFlags::castle : {
-        const bool    aside     = m.to().file() < m.from().file();
+        const bool    aside     = to.file() < from.file();
         const PieceId king_id   = PieceId{0};  // == src.id()
         const PieceId rook_id   = dst.id();
         const Square  king_from = from;
         const Square  rook_from = to;
-        const Square  king_to   = Square::fromFileAndRank(aside ? 2 : 6, to.rank());
-        const Square  rook_to   = Square::fromFileAndRank(aside ? 3 : 5, to.rank());
+        const Square  king_to   = Square::fromFileAndRank(aside ? 2 : 6, from.rank());
+        const Square  rook_to   = Square::fromFileAndRank(aside ? 3 : 5, from.rank());
 
         new_pos.m_board[king_from]              = Place::empty();
         new_pos.m_board[rook_from]              = Place::empty();
@@ -82,14 +85,15 @@ Position Position::move(Move m) const {
         break;
     }
     case MoveFlags::en_passant : {
-        const Place ep                           = m_board[m_enpassant];
-        new_pos.m_board[from]                    = Place::empty();
-        new_pos.m_board[m_enpassant]             = Place::empty();
-        new_pos.m_board[to]                      = src;
-        new_pos.m_piece_list_sq[color][src.id()] = to;
-        new_pos.m_piece_list_sq[color][ep.id()]  = Square::invalid();
-        new_pos.m_piece_list[color][ep.id()]     = PieceType::none;
-        new_pos.m_50mr                           = 0;
+        const Square victim_sq     = Square::fromFileAndRank(m_enpassant.file(), from.rank());
+        const Place  victim        = m_board[victim_sq];
+        new_pos.m_board[from]      = Place::empty();
+        new_pos.m_board[victim_sq] = Place::empty();
+        new_pos.m_board[to]        = src;
+        new_pos.m_piece_list_sq[color][src.id()]     = to;
+        new_pos.m_piece_list_sq[!color][victim.id()] = Square::invalid();
+        new_pos.m_piece_list[!color][victim.id()]    = PieceType::none;
+        new_pos.m_50mr                               = 0;
         break;
     }
     case MoveFlags::promo_knight :
@@ -106,13 +110,13 @@ Position Position::move(Move m) const {
     case MoveFlags::promo_bishop_capture :
     case MoveFlags::promo_rook_capture :
     case MoveFlags::promo_queen_capture :
-        new_pos.m_board[from]                    = Place::empty();
-        new_pos.m_board[to]                      = Place{m_active_color, *m.promo(), src.id()};
-        new_pos.m_piece_list_sq[color][src.id()] = to;
-        new_pos.m_piece_list_sq[color][dst.id()] = Square::invalid();
-        new_pos.m_piece_list[color][src.id()]    = *m.promo();
-        new_pos.m_piece_list[color][dst.id()]    = PieceType::none;
-        new_pos.m_50mr                           = 0;
+        new_pos.m_board[from]                     = Place::empty();
+        new_pos.m_board[to]                       = Place{m_active_color, *m.promo(), src.id()};
+        new_pos.m_piece_list_sq[color][src.id()]  = to;
+        new_pos.m_piece_list[color][src.id()]     = *m.promo();
+        new_pos.m_piece_list_sq[!color][dst.id()] = Square::invalid();
+        new_pos.m_piece_list[!color][dst.id()]    = PieceType::none;
+        new_pos.m_50mr                            = 0;
         check_dst_castling_rights();
         break;
     }
@@ -138,6 +142,81 @@ const std::array<Wordboard, 2> Position::calcAttacksSlow() {
     return result;
 }
 
+static void dumpRaysSq(v512 z, u64 mask = ~u64{0}) {
+    for (int ray = 0; ray < 8; ray++)
+    {
+        for (int i = 1; i < 8; i++)
+        {
+            const int index = ray * 8 + i;
+            if ((mask >> index) & 1)
+            {
+                std::cout << Square{z.b[index]};
+            }
+            else
+            {
+                std::cout << "--";
+            }
+            std::cout << " ";
+        }
+        std::cout << std::endl;
+    }
+    std::cout << "knight: ";
+    for (int ray = 0; ray < 8; ray++)
+    {
+        const int index = ray * 8;
+        if ((mask >> index) & 1)
+        {
+            std::cout << Square{z.b[index]};
+        }
+        else
+        {
+            std::cout << "--";
+        }
+        std::cout << " ";
+    }
+    std::cout << std::endl;
+}
+
+static void dumpRaysRaw(v512 z, u64 mask = ~u64{0}) {
+    std::ios state{nullptr};
+    state.copyfmt(std::cout);
+
+    for (int ray = 0; ray < 8; ray++)
+    {
+        for (int i = 1; i < 8; i++)
+        {
+            const int index = ray * 8 + i;
+            if ((mask >> index) & 1)
+            {
+                std::cout << std::hex << std::setfill('0') << std::setw(2) << (int) z.b[index];
+            }
+            else
+            {
+                std::cout << "--";
+            }
+            std::cout << " ";
+        }
+        std::cout << std::endl;
+    }
+    std::cout << "knight: ";
+    for (int ray = 0; ray < 8; ray++)
+    {
+        const int index = ray * 8;
+        if ((mask >> index) & 1)
+        {
+            std::cout << std::hex << (int) z.b[index];
+        }
+        else
+        {
+            std::cout << "--";
+        }
+        std::cout << " ";
+    }
+    std::cout << std::endl;
+
+    std::cout.copyfmt(state);
+}
+
 const std::array<u16, 2> Position::calcAttacksSlow(Square sq) {
     const auto [ray_coords, ray_valid] = geometry::superpieceRays(sq);
     const v512 ray_places              = v512::permute8(ray_coords, m_board.raw);
@@ -150,6 +229,20 @@ const std::array<u16, 2> Position::calcAttacksSlow(Square sq) {
     const u64 attackers       = geometry::attackersFromRays(ray_places);
     const u64 white_attackers = ~color & visible & attackers;
     const u64 black_attackers = color & visible & attackers;
+
+    // if (sq.raw == 1)
+    // {
+    //     std::cout << sq << std::endl;
+    //     dumpRaysSq(ray_coords, ray_valid);
+    //     dumpRaysRaw(ray_places, ray_valid);
+    //     std::cout << "occupied" << std::endl;
+    //     dumpRaysSq(ray_coords, occupied);
+    //     std::cout << "visible" << std::endl;
+    //     dumpRaysSq(ray_coords, visible);
+    //     std::cout << "attackers" << std::endl;
+    //     dumpRaysSq(ray_coords, attackers);
+    //     std::cout << std::endl;
+    // }
 
     const int  white_attackers_count = std::popcount(white_attackers);
     const int  black_attackers_count = std::popcount(black_attackers);

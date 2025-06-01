@@ -14,14 +14,14 @@ static std::tuple<u64, u64, u64, int, int> validPawns(Color color, u64 bb, u64 e
     switch (color)
     {
     case Color::white : {
-        const u64 single = bb & (empty & dests) >> 8;
-        return {single & 0x0000FFFFFFFF0000,
+        const u64 single = bb & ((empty & dests) >> 8);
+        return {single & 0x0000FFFFFFFFFF00,
                 bb & (empty >> 8) & ((empty & dests) >> 16) & 0x000000000000FF00,
                 single & 0x00FF000000000000, 8, 16};
     }
     case Color::black :
-        const u64 single = bb & (empty & dests) << 8;
-        return {single & 0x0000FFFFFFFF0000,
+        const u64 single = bb & ((empty & dests) << 8);
+        return {single & 0x00FFFFFFFFFF0000,
                 bb & (empty << 8) & ((empty & dests) << 16) & 0x00FF000000000000,
                 single & 0x000000000000FF00, -8, -16};
     }
@@ -72,21 +72,22 @@ void MoveGen::generateMoves(MoveList& moves) {
             const u64 clear      = empty | king_sq.toBitboard() | rook_info.aside.toBitboard();
             const u8  rank_empty = static_cast<u8>(clear >> color_shift);
             const u8  rank_safe  = static_cast<u8>(~danger >> color_shift);
-            if ((rank_empty & 0x0F) == 0x0F && (rank_safe & 0x0E) == 0x0E)
+            if ((rank_empty & 0x1F) == 0x1F && (rank_safe & 0x1C) == 0x1C)
                 moves.push_back(Move{king_sq, rook_info.aside, MoveFlags::castle});
         }
         if (rook_info.hside.isValid())
         {
-            const u64 clear      = empty | king_sq.toBitboard() | rook_info.aside.toBitboard();
+            const u64 clear      = empty | king_sq.toBitboard() | rook_info.hside.toBitboard();
             const u8  rank_empty = static_cast<u8>(clear >> color_shift);
             const u8  rank_safe  = static_cast<u8>(~danger >> color_shift);
-            if ((rank_empty & 0xF8) == 0xF8 && (rank_safe & 0x38) == 0x38)
+            if ((rank_empty & 0xF0) == 0xF0 && (rank_safe & 0x70) == 0x70)
                 moves.push_back(Move{king_sq, rook_info.hside, MoveFlags::castle});
         }
     }
 
     // Undefended non-pawn quiets
     write(moves, at, active & empty & ~danger, non_pawn_mask, MoveFlags::normal);
+
     // Defended non-pawn quiets
     write(moves, at, active & empty & danger, non_pawn_mask & ~king_mask, MoveFlags::normal);
 
@@ -114,7 +115,8 @@ void MoveGen::write(MoveList& moves, Square dest, u16 piecemask, MoveFlags mf) {
     const usize count = std::popcount(piecemask);
     for (u8 i = 0; i < count; i++, piecemask &= piecemask - 1)
     {
-        const Square src = m_position.pieceListSq(m_active_color)[PieceId{i}];
+        const PieceId id{static_cast<u8>(std::countr_zero(piecemask))};
+        const Square  src = m_position.pieceListSq(m_active_color)[id];
         moves.push_back(Move{src, dest, mf});
     }
 }

@@ -17,8 +17,8 @@ class StaticVector {
     using const_iterator = const T*;
     using size_type      = usize;
 
-    constexpr StaticVector() = default;
-    ~StaticVector()          = default;
+    constexpr StaticVector() {}
+    ~StaticVector() = default;
 
     constexpr StaticVector(const StaticVector& other) :
         len(other.len) {

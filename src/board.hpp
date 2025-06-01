@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <iosfwd>
 
 #include "util/types.hpp"
 #include "util/vec.hpp"
@@ -19,6 +20,8 @@ struct PieceId {
 
     constexpr u16 toPieceMask() const { return static_cast<u16>(1 << raw); }
 };
+
+static_assert(sizeof(PieceId) == sizeof(u8));
 
 struct Place {
     inline static constexpr u8 slider_bit = 0b100 << 4;
@@ -46,6 +49,8 @@ struct Place {
     inline constexpr bool operator==(const Place&) const = default;
 };
 
+static_assert(sizeof(Place) == sizeof(u8));
+
 union Byteboard {
     v512                  raw;
     std::array<Place, 64> mailbox;
@@ -58,13 +63,16 @@ union Byteboard {
 
     u64 bitboardFor(Color color, PieceType ptype) const {
         const Place p{color, ptype, PieceId{0}};
-        return v512::test8(raw & v512::broadcast8(0xF8), v512::broadcast8(p.raw));
+        return v512::eq8(raw & v512::broadcast8(0xF0), v512::broadcast8(p.raw));
     }
 
-    constexpr Place operator[](Square sq) const { return mailbox[sq.raw]; }
+    constexpr Place& operator[](Square sq) { return mailbox[sq.raw]; }
+    constexpr Place  operator[](Square sq) const { return mailbox[sq.raw]; }
 
     bool operator==(const Byteboard& other) const = default;
 };
+
+static_assert(sizeof(Byteboard) == 64);
 
 union Wordboard {
     std::array<v512, 2> raw;
@@ -72,9 +80,13 @@ union Wordboard {
 
     u64 getAttackedBitboard() const { return concat64(raw[0].nonzero16(), raw[1].nonzero16()); }
 
-    constexpr u16 operator[](Square sq) const { return mailbox[sq.raw]; }
+    constexpr u16& operator[](Square sq) { return mailbox[sq.raw]; }
+    constexpr u16  operator[](Square sq) const { return mailbox[sq.raw]; }
 
-    bool operator==(const Wordboard& other) const = default;
+    bool                 operator==(const Wordboard& other) const = default;
+    friend std::ostream& operator<<(std::ostream& os, const Wordboard& at);
 };
+
+static_assert(sizeof(Wordboard) == 128);
 
 }

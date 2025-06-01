@@ -63,7 +63,7 @@ inline u64 attackersFromRays(v512 ray_places) {
     constexpr u8 bpawn_near = b | q | k | bp;
 
     static constexpr v128 ptype_to_bits{
-      std::array<u8, 16>{{0, wp, n, b, r, k, 0, 0, 0, bp, n, b, r, k, 0, 0}}};
+      std::array<u8, 16>{{0, wp, n, b, r, q, k, 0, 0, bp, n, b, r, q, k, 0}}};
 
     static constexpr v512 attacker_mask = v512{std::array<u8, 64>{
       horse, orth_near,  orth, orth, orth, orth, orth, orth,  // N
