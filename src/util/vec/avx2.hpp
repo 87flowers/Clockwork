@@ -6,6 +6,7 @@
 
 namespace Clockwork {
 
+forceinline u32 concat32(u16 a, u16 b) { return static_cast<u32>(a) | (static_cast<u32>(b) << 16); }
 forceinline u64 concat64(u32 a, u32 b) { return static_cast<u64>(a) | (static_cast<u64>(b) << 32); }
 
 union v128 {
@@ -32,6 +33,10 @@ union v128 {
     forceinline constexpr explicit v128(std::array<u64, 2> src) :
         q(src) {}
 
+    static forceinline v128 zero() { return {_mm_setzero_si128()}; }
+
+    static forceinline v128 broadcast8(u8 x) { return {_mm_set1_epi8(x)}; }
+
     static forceinline v128 blend8(v128 mask, v128 a, v128 b) {
         return {_mm_blendv_epi8(a.raw, b.raw, mask.raw)};
     }
@@ -53,6 +58,16 @@ union v128 {
     }
 
     static forceinline v128 shr16(v128 a, int shift) { return {_mm_srli_epi16(a.raw, shift)}; }
+
+    static forceinline u16 test8(v128 a, v128 b) {
+        return static_cast<u16>(_mm_movemask_epi8(_mm_cmpeq_epi8(a.raw, b.raw)));
+    }
+
+    static forceinline u16 testn8(v128 a, v128 b) {
+        return static_cast<u16>(~_mm_movemask_epi8(_mm_cmpeq_epi8(a.raw, b.raw)));
+    }
+
+    forceinline u16 nonzero8() const { return testn8(*this, zero()); }
 
     forceinline auto operator==(const v128& other) const -> bool {
         const __m128i t = _mm_xor_si128(raw, other.raw);
@@ -110,8 +125,17 @@ union v256 {
 
     static forceinline v256 shr16(v256 a, int shift) { return {_mm256_slli_epi16(a.raw, shift)}; }
 
+    static forceinline u32 test8(v256 a, v256 b) {
+        return static_cast<u32>(_mm256_movemask_epi8(_mm256_cmpeq_epi8(a.raw, b.raw)));
+    }
+
     static forceinline u32 testn8(v256 a, v256 b) {
         return static_cast<u32>(~_mm256_movemask_epi8(_mm256_cmpeq_epi8(a.raw, b.raw)));
+    }
+
+    static forceinline u16 testn16(v256 a, v256 b) {
+        return static_cast<u16>(_pext_u32(
+          static_cast<u32>(~_mm256_movemask_epi8(_mm256_cmpeq_epi16(a.raw, b.raw))), 0xAAAAAAAA));
     }
 
     forceinline u32 msb8() const { return static_cast<u32>(_mm256_movemask_epi8(raw)); }
@@ -187,12 +211,22 @@ union v512 {
         return v512{v256::shr16(a.raw[0], shift), v256::shr16(a.raw[1], shift)};
     }
 
+    static forceinline u64 test8(v512 a, v512 b) {
+        return concat64(v256::test8(a.raw[0], b.raw[0]), v256::test8(a.raw[1], b.raw[1]));
+    }
+
     static forceinline u64 testn8(v512 a, v512 b) {
         return concat64(v256::testn8(a.raw[0], b.raw[0]), v256::testn8(a.raw[1], b.raw[1]));
     }
 
+    static forceinline u32 testn16(v512 a, v512 b) {
+        return concat32(v256::testn16(a.raw[0], b.raw[0]), v256::testn16(a.raw[1], b.raw[1]));
+    }
+
     forceinline u64 msb8() const { return concat64(raw[0].msb8(), raw[1].msb8()); }
-    forceinline u64 nonzero8() const { return testn8(*this, v512::zero()); }
+    forceinline u64 zero8() const { return test8(*this, zero()); }
+    forceinline u64 nonzero8() const { return testn8(*this, zero()); }
+    forceinline u32 nonzero16() const { return testn16(*this, zero()); }
 
     friend forceinline v512 operator&(v512 a, v512 b) {
         return v512{a.raw[0] & b.raw[0], a.raw[1] & b.raw[1]};

@@ -22,9 +22,10 @@ endfunction()
 set(srcs
   src/util/vec/avx512.hpp
   src/util/vec/avx2.hpp
+  src/util/static_vector.hpp
   src/util/types.hpp
   src/util/vec.hpp
-  src/movegen.h
+  src/movegen.hpp
   src/movegen.cpp
   src/uci.cpp
   src/uci.hpp

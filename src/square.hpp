@@ -2,6 +2,7 @@
 
 #include "util/types.hpp"
 
+#include <cassert>
 #include <compare>
 #include <optional>
 #include <ostream>
@@ -37,6 +38,8 @@ struct Square {
     constexpr int file() const { return raw % 8; }
 
     constexpr int rank() const { return raw / 8; }
+
+    constexpr u64 toBitboard() const { return static_cast<u64>(1) << raw; }
 
     friend std::ostream& operator<<(std::ostream& os, Square sq) {
         char file = static_cast<char>('a' + sq.file());

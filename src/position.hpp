@@ -19,6 +19,10 @@ union alignas(16) PieceList {
     constexpr T& operator[](PieceId id) { return array[id.raw]; }
     constexpr T  operator[](PieceId id) const { return array[id.raw]; }
 
+    u16 maskEq(PieceType ptype) const {
+        return v128::test8(raw, v128::broadcast8(static_cast<u8>(ptype)));
+    }
+
     constexpr bool operator==(const PieceList& other) const { return array == other.array; }
 };
 
@@ -43,23 +47,23 @@ struct RookInfo {
 
 struct Position {
    private:
-    std::array<Wordboard, 2>         m_attack_table{};
-    std::array<PieceList<Square>, 2> m_piece_list_sq{};
-    std::array<PieceList<Piece>, 2>  m_piece_list{};
-    Byteboard                        m_board{};
-    u64                              m_hash{};
-    u16                              m_50mr{};
-    u16                              m_ply{};
-    Color                            m_active_color{};
-    Square                           m_enpassant = Square::invalid();
-    std::array<RookInfo, 2>          m_rook_info;
+    std::array<Wordboard, 2>            m_attack_table{};
+    std::array<PieceList<Square>, 2>    m_piece_list_sq{};
+    std::array<PieceList<PieceType>, 2> m_piece_list{};
+    Byteboard                           m_board{};
+    u64                                 m_hash{};
+    u16                                 m_50mr{};
+    u16                                 m_ply{};
+    Color                               m_active_color{};
+    Square                              m_enpassant = Square::invalid();
+    std::array<RookInfo, 2>             m_rook_info;
 
    public:
     constexpr Position() = default;
 
-    const Byteboard&         board() const { return m_board; }
-    const Wordboard&         attackTable(Color color) const { return m_attack_table[(int) color]; }
-    const PieceList<Piece>&  pieceList(Color color) const { return m_piece_list[(int) color]; }
+    const Byteboard& board() const { return m_board; }
+    const Wordboard& attackTable(Color color) const { return m_attack_table[(int) color]; }
+    const PieceList<PieceType>& pieceList(Color color) const { return m_piece_list[(int) color]; }
     const PieceList<Square>& pieceListSq(Color color) const { return m_piece_list_sq[(int) color]; }
     Color                    activeColor() const { return m_active_color; }
     Square                   enpassant() const { return m_enpassant; }
@@ -67,8 +71,8 @@ struct Position {
 
     Square kingSq(Color color) const { return pieceListSq(color)[PieceId{0}]; }
 
-    const std::array<Wordboard, 2> calcAttacksSlow();           // TODO
-    const std::array<u16, 2>       calcAttacksSlow(Square sq);  // TODO
+    const std::array<Wordboard, 2> calcAttacksSlow();
+    const std::array<u16, 2>       calcAttacksSlow(Square sq);
 
     static std::optional<Position> parse(std::string_view str);
     static std::optional<Position> parse(std::string_view board,

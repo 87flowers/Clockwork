@@ -21,6 +21,7 @@ const std::array<Wordboard, 2> Position::calcAttacksSlow() {
     }
     return result;
 }
+
 const std::array<u16, 2> Position::calcAttacksSlow(Square sq) {
     const auto [ray_coords, ray_valid] = geometry::superpieceRays(sq);
     const v512 ray_places              = v512::permute8(ray_coords, m_board.raw);
@@ -73,18 +74,18 @@ std::optional<Position> Position::parse(std::string_view board,
             const Square sq   = Square::fromFileAndRank(file, rank);
             const char   ch   = board[i];
 
-            const auto put_piece_raw = [&](Color color, Piece piece, u8 current_id) {
-                result.m_board.mailbox[sq.raw] = Place{color, piece, PieceId{current_id}};
+            const auto put_piece_raw = [&](Color color, PieceType ptype, u8 current_id) {
+                result.m_board.mailbox[sq.raw] = Place{color, ptype, PieceId{current_id}};
                 result.m_piece_list_sq[(int) color].array[current_id] = sq;
-                result.m_piece_list[(int) color].array[current_id]    = piece;
+                result.m_piece_list[(int) color].array[current_id]    = ptype;
                 place_index++;
             };
 
-            const auto put_piece = [&](Color color, Piece piece) -> bool {
+            const auto put_piece = [&](Color color, PieceType ptype) -> bool {
                 u8& current_id = id[(int) color];
                 if (current_id >= 0x10)
                     return false;
-                put_piece_raw(color, piece, current_id);
+                put_piece_raw(color, ptype, current_id);
                 current_id++;
                 return true;
             };
@@ -107,50 +108,50 @@ std::optional<Position> Position::parse(std::string_view board,
                 break;
             case 'K' :
                 // TODO: Error if king already on board
-                put_piece_raw(Color::white, Piece::king, 0);
+                put_piece_raw(Color::white, PieceType::king, 0);
                 break;
             case 'Q' :
-                if (!put_piece(Color::white, Piece::queen))
+                if (!put_piece(Color::white, PieceType::queen))
                     return std::nullopt;
                 break;
             case 'R' :
-                if (!put_piece(Color::white, Piece::rook))
+                if (!put_piece(Color::white, PieceType::rook))
                     return std::nullopt;
                 break;
             case 'B' :
-                if (!put_piece(Color::white, Piece::bishop))
+                if (!put_piece(Color::white, PieceType::bishop))
                     return std::nullopt;
                 break;
             case 'N' :
-                if (!put_piece(Color::white, Piece::knight))
+                if (!put_piece(Color::white, PieceType::knight))
                     return std::nullopt;
                 break;
             case 'P' :
-                if (!put_piece(Color::white, Piece::pawn))
+                if (!put_piece(Color::white, PieceType::pawn))
                     return std::nullopt;
                 break;
             case 'k' :
                 // TODO: Error if king already on board
-                put_piece_raw(Color::black, Piece::king, 0);
+                put_piece_raw(Color::black, PieceType::king, 0);
                 break;
             case 'q' :
-                if (!put_piece(Color::black, Piece::queen))
+                if (!put_piece(Color::black, PieceType::queen))
                     return std::nullopt;
                 break;
             case 'r' :
-                if (!put_piece(Color::black, Piece::rook))
+                if (!put_piece(Color::black, PieceType::rook))
                     return std::nullopt;
                 break;
             case 'b' :
-                if (!put_piece(Color::black, Piece::bishop))
+                if (!put_piece(Color::black, PieceType::bishop))
                     return std::nullopt;
                 break;
             case 'n' :
-                if (!put_piece(Color::black, Piece::knight))
+                if (!put_piece(Color::black, PieceType::knight))
                     return std::nullopt;
                 break;
             case 'p' :
-                if (!put_piece(Color::black, Piece::pawn))
+                if (!put_piece(Color::black, PieceType::pawn))
                     return std::nullopt;
                 break;
             default :

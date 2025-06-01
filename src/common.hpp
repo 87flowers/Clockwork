@@ -19,7 +19,9 @@ constexpr char color_char(Color color) {
     }
 }
 
-enum class Piece {
+constexpr Color invert(Color color) { return static_cast<Color>(static_cast<int>(color) ^ 1); }
+
+enum class PieceType {
     none,
     pawn,
     knight,
@@ -29,22 +31,22 @@ enum class Piece {
     king,
 };
 
-constexpr char piece_char(Piece piece) {
+constexpr char piece_char(PieceType piece) {
     switch (piece)
     {
-    case Piece::none :
+    case PieceType::none :
         return '.';
-    case Piece::pawn :
+    case PieceType::pawn :
         return 'p';
-    case Piece::knight :
+    case PieceType::knight :
         return 'n';
-    case Piece::bishop :
+    case PieceType::bishop :
         return 'b';
-    case Piece::rook :
+    case PieceType::rook :
         return 'r';
-    case Piece::queen :
+    case PieceType::queen :
         return 'q';
-    case Piece::king :
+    case PieceType::king :
         return 'k';
     }
 }
