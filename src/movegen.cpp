@@ -73,8 +73,7 @@ void MoveGen::generateMoves(MoveList& moves) {
             const u8  rank_empty = static_cast<u8>(clear >> color_shift);
             const u8  rank_safe  = static_cast<u8>(~danger >> color_shift);
             if ((rank_empty & 0x0F) == 0x0F && (rank_safe & 0x0E) == 0x0E)
-                moves.push_back(
-                  Move{king_sq, Square::fromFileAndRank(king_sq.file(), 2), MoveFlags::castle});
+                moves.push_back(Move{king_sq, rook_info.aside, MoveFlags::castle});
         }
         if (rook_info.hside.isValid())
         {
@@ -82,8 +81,7 @@ void MoveGen::generateMoves(MoveList& moves) {
             const u8  rank_empty = static_cast<u8>(clear >> color_shift);
             const u8  rank_safe  = static_cast<u8>(~danger >> color_shift);
             if ((rank_empty & 0xF8) == 0xF8 && (rank_safe & 0x38) == 0x38)
-                moves.push_back(
-                  Move{king_sq, Square::fromFileAndRank(king_sq.file(), 5), MoveFlags::castle});
+                moves.push_back(Move{king_sq, rook_info.hside, MoveFlags::castle});
         }
     }
 

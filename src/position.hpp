@@ -5,6 +5,7 @@
 #include <iosfwd>
 
 #include "board.hpp"
+#include "move.hpp"
 #include "square.hpp"
 #include "util/types.hpp"
 #include "util/vec.hpp"
@@ -70,6 +71,8 @@ struct Position {
     RookInfo                 rookInfo(Color color) const { return m_rook_info[(int) color]; }
 
     Square kingSq(Color color) const { return pieceListSq(color)[PieceId{0}]; }
+
+    Position move(Move m) const;
 
     const std::array<Wordboard, 2> calcAttacksSlow();
     const std::array<u16, 2>       calcAttacksSlow(Square sq);

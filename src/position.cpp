@@ -10,6 +10,122 @@
 
 namespace Clockwork {
 
+Position Position::move(Move m) const {
+    Position new_pos = *this;
+
+    const Square from  = m.from();
+    const Square to    = m.to();
+    const Place  src   = m_board[from];
+    const Place  dst   = m_board[to];
+    const int    color = (int) m_active_color;
+
+    if (m_enpassant.isValid())
+        new_pos.m_enpassant = Square::invalid();
+
+    const auto check_src_castling_rights = [&] {
+        if (src.ptype() == PieceType::rook)
+            new_pos.m_rook_info[color].unset(from);
+        else if (src.ptype() == PieceType::king)
+            new_pos.m_rook_info[color].clear();
+    };
+
+    const auto check_dst_castling_rights = [&] {
+        if (dst.ptype() == PieceType::rook)
+            new_pos.m_rook_info[!color].unset(to);
+    };
+
+    switch (m.flags())
+    {
+    case MoveFlags::normal :
+        new_pos.m_board[from]                    = Place::empty();
+        new_pos.m_board[to]                      = src;
+        new_pos.m_piece_list_sq[color][src.id()] = to;
+        if (src.ptype() == PieceType::pawn)
+        {
+            new_pos.m_50mr = 0;
+            if (dst.raw - src.raw == 16 || src.raw - dst.raw == 16)
+                new_pos.m_enpassant = Square(static_cast<u8>((src.raw + dst.raw) / 2));
+        }
+        else
+        {
+            new_pos.m_50mr++;
+            check_src_castling_rights();
+        }
+        break;
+    case MoveFlags::capture_bit :
+        new_pos.m_board[from]                     = Place::empty();
+        new_pos.m_board[to]                       = src;
+        new_pos.m_piece_list_sq[color][src.id()]  = to;
+        new_pos.m_piece_list_sq[!color][dst.id()] = Square::invalid();
+        new_pos.m_piece_list[!color][dst.id()]    = PieceType::none;
+        new_pos.m_50mr                            = 0;
+        check_src_castling_rights();
+        check_dst_castling_rights();
+        break;
+    case MoveFlags::castle : {
+        const bool    aside     = m.to().file() < m.from().file();
+        const PieceId king_id   = PieceId{0};  // == src.id()
+        const PieceId rook_id   = dst.id();
+        const Square  king_from = from;
+        const Square  rook_from = to;
+        const Square  king_to   = Square::fromFileAndRank(aside ? 2 : 6, to.rank());
+        const Square  rook_to   = Square::fromFileAndRank(aside ? 3 : 5, to.rank());
+
+        new_pos.m_board[king_from]              = Place::empty();
+        new_pos.m_board[rook_from]              = Place::empty();
+        new_pos.m_board[king_to]                = Place{m_active_color, PieceType::king, king_id};
+        new_pos.m_board[rook_to]                = Place{m_active_color, PieceType::rook, rook_id};
+        new_pos.m_piece_list_sq[color][king_id] = king_to;
+        new_pos.m_piece_list_sq[color][rook_id] = rook_to;
+        new_pos.m_50mr++;
+        new_pos.m_rook_info[color].clear();
+        break;
+    }
+    case MoveFlags::en_passant : {
+        const Place ep                           = m_board[m_enpassant];
+        new_pos.m_board[from]                    = Place::empty();
+        new_pos.m_board[m_enpassant]             = Place::empty();
+        new_pos.m_board[to]                      = src;
+        new_pos.m_piece_list_sq[color][src.id()] = to;
+        new_pos.m_piece_list_sq[color][ep.id()]  = Square::invalid();
+        new_pos.m_piece_list[color][ep.id()]     = PieceType::none;
+        new_pos.m_50mr                           = 0;
+        break;
+    }
+    case MoveFlags::promo_knight :
+    case MoveFlags::promo_bishop :
+    case MoveFlags::promo_rook :
+    case MoveFlags::promo_queen :
+        new_pos.m_board[from]                    = Place::empty();
+        new_pos.m_board[to]                      = Place{m_active_color, *m.promo(), src.id()};
+        new_pos.m_piece_list_sq[color][src.id()] = to;
+        new_pos.m_piece_list[color][src.id()]    = *m.promo();
+        new_pos.m_50mr                           = 0;
+        break;
+    case MoveFlags::promo_knight_capture :
+    case MoveFlags::promo_bishop_capture :
+    case MoveFlags::promo_rook_capture :
+    case MoveFlags::promo_queen_capture :
+        new_pos.m_board[from]                    = Place::empty();
+        new_pos.m_board[to]                      = Place{m_active_color, *m.promo(), src.id()};
+        new_pos.m_piece_list_sq[color][src.id()] = to;
+        new_pos.m_piece_list_sq[color][dst.id()] = Square::invalid();
+        new_pos.m_piece_list[color][src.id()]    = *m.promo();
+        new_pos.m_piece_list[color][dst.id()]    = PieceType::none;
+        new_pos.m_50mr                           = 0;
+        check_dst_castling_rights();
+        break;
+    }
+
+    new_pos.m_active_color = invert(m_active_color);
+    new_pos.m_ply++;
+
+    // TODO: Do this incrementally
+    new_pos.m_attack_table = new_pos.calcAttacksSlow();
+
+    return new_pos;
+}
+
 const std::array<Wordboard, 2> Position::calcAttacksSlow() {
     std::array<Wordboard, 2> result{};
     for (int i = 0; i < 64; i++)

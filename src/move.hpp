@@ -61,7 +61,23 @@ struct Move {
     }
 
     friend std::ostream& operator<<(std::ostream& os, Move mv) {
-        os << mv.from() << mv.to();
+        os << mv.from();
+
+        if (mv.flags() == MoveFlags::castle)
+        {
+            // TODO: FRC
+            if (mv.to().file() < mv.from().file())
+                os << 'c';
+            else
+                os << 'g';
+            os << mv.to().rank();
+        }
+        else
+        {
+            os << mv.to();
+        }
+
+
         if (auto promo = mv.promo())
         {
             os << piece_char(*promo);
