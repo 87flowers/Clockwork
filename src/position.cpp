@@ -1,17 +1,47 @@
 #include "position.hpp"
 
+#include <array>
+#include <bit>
 #include <sstream>
+
+#include "board.hpp"
+#include "geometry.hpp"
+#include "util/types.hpp"
 
 namespace Clockwork {
 
 const std::array<Wordboard, 2> Position::calcAttacksSlow() {
-    // TODO
-    return {};
+    std::array<Wordboard, 2> result{};
+    for (int i = 0; i < 64; i++)
+    {
+        const Square sq{static_cast<u8>(i)};
+        const auto [white, black] = calcAttacksSlow(sq);
+        result[0].mailbox[i]      = white;
+        result[1].mailbox[i]      = black;
+    }
+    return result;
 }
 const std::array<u16, 2> Position::calcAttacksSlow(Square sq) {
-    // TODO
-    (void) sq;
-    return {};
+    const auto [ray_coords, ray_valid] = geometry::superpieceRays(sq);
+    const v512 ray_places              = v512::permute8(ray_coords, m_board.raw);
+
+    const u64 occupied = ray_places.nonzero8();
+    const u64 color    = ray_places.msb8();
+
+    const u64 visible = geometry::superpieceAttacks(occupied, ray_valid) & occupied;
+
+    const u64 attackers       = geometry::attackersFromRays(ray_places);
+    const u64 white_attackers = ~color & visible & attackers;
+    const u64 black_attackers = color & visible & attackers;
+
+    const int  white_attackers_count = std::popcount(white_attackers);
+    const int  black_attackers_count = std::popcount(black_attackers);
+    const v128 white_attackers_coord = v512::compress8(white_attackers, ray_coords).to128();
+    const v128 black_attackers_coord = v512::compress8(black_attackers, ray_coords).to128();
+    return {
+      findset8(white_attackers_coord, white_attackers_count, m_piece_list_sq[0].raw),
+      findset8(black_attackers_coord, black_attackers_count, m_piece_list_sq[1].raw),
+    };
 }
 
 std::optional<Position> Position::parse(std::string_view str) {
@@ -204,6 +234,8 @@ std::optional<Position> Position::parse(std::string_view board,
     {
         return std::nullopt;
     }
+
+    result.m_attack_table = result.calcAttacksSlow();
 
     return result;
 }
