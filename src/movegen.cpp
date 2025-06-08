@@ -56,21 +56,19 @@ void MoveGen::generate_moves_to(MoveList& moves, Bitboard valid_destinations, bo
     auto [pin_mask, pinned] = m_position.calc_pin_mask();
     std::array<u16, 64> at  = (m_position.attack_table(active_color) & pin_mask).to_mailbox();
 
-    u16 king_mask = 1;
-    u16 pawn_mask = m_position.piece_list(active_color).mask_eq(PieceType::Pawn);
+    u16 king_mask     = 1;
+    u16 pawn_mask     = m_position.piece_list(active_color).mask_eq(PieceType::Pawn);
+    u16 valid_plist   = m_position.piece_list(active_color).mask_valid();
+    u16 non_pawn_mask = valid_plist & ~pawn_mask & ~king_mask;
 
     Bitboard pawn_active =
       m_position.attack_table(active_color).get_piece_mask_bitboard(pawn_mask) & valid_destinations;
     Bitboard nonpawn_active =
-      m_position.attack_table(active_color).get_piece_mask_bitboard(~pawn_mask)
+      m_position.attack_table(active_color).get_piece_mask_bitboard(non_pawn_mask)
       & valid_destinations;
+    Bitboard king_active =
+      m_position.attack_table(active_color).get_piece_mask_bitboard(king_mask) & valid_destinations;
     Bitboard danger = m_position.attack_table(invert(active_color)).get_attacked_bitboard();
-
-    u16 valid_plist = m_position.piece_list(active_color).mask_valid();
-    if constexpr (!king_moves) {
-        valid_plist &= ~king_mask;
-    }
-    u16 non_pawn_mask = valid_plist & ~pawn_mask;
 
     if (Square ep = m_position.en_passant(); can_ep && ep.is_valid()) {
         u16 ep_attackers_mask = at[ep.raw] & pawn_mask;
@@ -79,11 +77,12 @@ void MoveGen::generate_moves_to(MoveList& moves, Bitboard valid_destinations, bo
         }
     }
 
-    // Undefended non-pawn captures
-    write(moves, at, nonpawn_active & enemy & ~danger, non_pawn_mask, MoveFlags::CaptureBit);
-    // Defended non-pawn captures
-    write(moves, at, nonpawn_active & enemy & danger, non_pawn_mask & ~king_mask,
-          MoveFlags::CaptureBit);
+    // Non-pawn captures
+    write(moves, at, nonpawn_active & enemy, non_pawn_mask, MoveFlags::CaptureBit);
+    // King captures
+    if constexpr (king_moves) {
+        write_king(moves, king_active & enemy & ~danger, MoveFlags::CaptureBit);
+    }
 
     Bitboard promo_zone{static_cast<u64>(0xFF) << (active_color == Color::White ? 56 : 0)};
     // Capture-with-promotion
@@ -119,12 +118,12 @@ void MoveGen::generate_moves_to(MoveList& moves, Bitboard valid_destinations, bo
         }
     }
 
-    // Undefended non-pawn quiets
-    write(moves, at, nonpawn_active & empty & ~danger, non_pawn_mask, MoveFlags::Normal);
-
-    // Defended non-pawn quiets
-    write(moves, at, nonpawn_active & empty & danger, non_pawn_mask & ~king_mask,
-          MoveFlags::Normal);
+    // Non-pawn quiets
+    write(moves, at, nonpawn_active & empty, non_pawn_mask, MoveFlags::Normal);
+    // King quiets
+    if constexpr (king_moves) {
+        write_king(moves, king_active & empty & ~danger, MoveFlags::Normal);
+    }
 
     // Pawn quiets
     {
@@ -153,8 +152,6 @@ void MoveGen::generate_king_moves_to(MoveList& moves, Bitboard valid_destination
     Bitboard empty = m_position.board().get_empty_bitboard();
     Bitboard enemy = m_position.board().get_color_bitboard(invert(active_color));
 
-    std::array<u16, 64> at = m_position.attack_table(active_color).to_mailbox();
-
     u16 king_mask = 1;
 
     Bitboard active =
@@ -162,9 +159,9 @@ void MoveGen::generate_king_moves_to(MoveList& moves, Bitboard valid_destination
     Bitboard danger = m_position.attack_table(invert(active_color)).get_attacked_bitboard();
 
     // Undefended captures
-    write(moves, at, active & enemy & ~danger, king_mask, MoveFlags::CaptureBit);
+    write_king(moves, active & enemy & ~danger, MoveFlags::CaptureBit);
     // Undefended quiets
-    write(moves, at, active & empty & ~danger, king_mask, MoveFlags::Normal);
+    write_king(moves, active & empty & ~danger, MoveFlags::Normal);
 }
 
 void MoveGen::generate_moves_one_checker(MoveList& moves, u16 checker) {
@@ -219,6 +216,13 @@ void MoveGen::write(
 void MoveGen::write_pawn(MoveList& moves, Bitboard src_bb, i32 shift, MoveFlags mf) {
     for (Square src : src_bb) {
         Square dest{static_cast<u8>(src.raw + shift)};
+        moves.push_back(Move{src, dest, mf});
+    }
+}
+
+void MoveGen::write_king(MoveList& moves, Bitboard dest_bb, MoveFlags mf) {
+    Square src = m_position.king_sq(m_active_color);
+    for (Square dest : dest_bb) {
         moves.push_back(Move{src, dest, mf});
     }
 }
