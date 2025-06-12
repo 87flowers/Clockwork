@@ -238,10 +238,13 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
         }
     }
 
-    Bound bound = best_value >= beta        ? Bound::Lower
-                : best_move != Move::none() ? Bound::Exact
-                                            : Bound::Upper;
-    m_tt.store(pos, ply, best_move, best_value, depth, bound);
+    Bound bound       = best_value >= beta        ? Bound::Lower
+                      : best_move != Move::none() ? Bound::Exact
+                                                  : Bound::Upper;
+    Move  new_tt_move = best_move != Move::none() ? best_move
+                      : tt_data                   ? tt_data->move
+                                                  : Move::none();
+    m_tt.store(pos, ply, new_tt_move, best_value, depth, bound);
 
     return best_value;
 }
