@@ -44,8 +44,11 @@ private:
 
     Move iterative_deepening(Position root_position);
 
+    template<typename NT>
     Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, i32 ply);
+    template<typename NT>
     Value quiesce(Position& pos, Stack* ss, Value alpha, Value beta, i32 ply);
+
     Value evaluate(const Position& pos);
     bool  check_tm_hard_limit();
 };
