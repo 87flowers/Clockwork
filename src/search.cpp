@@ -142,6 +142,18 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
     // ...
     search_nodes++;
 
+    // Check for hard time limit
+    // TODO: add control for being main search thread here
+    if ((search_nodes & 2047) == 0 && check_tm_hard_limit()) {
+        return 0;
+    }
+
+    // Check for hard nodes limit
+    if (search_nodes >= m_search_limits.hard_node_limit) {
+        m_stopped = true;
+        return 0;
+    }
+
     // Draw checks
     if (!ROOT_NODE) {
         // Repetition check
@@ -157,18 +169,6 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
     // Return eval if we exceed the max ply.
     if (ply >= MAX_PLY) {
         return evaluate(pos);
-    }
-
-    // Check for hard time limit
-    // TODO: add control for being main search thread here
-    if ((search_nodes & 2047) == 0 && check_tm_hard_limit()) {
-        return 0;
-    }
-
-    // Check for hard nodes limit
-    if (search_nodes >= m_search_limits.hard_node_limit) {
-        m_stopped = true;
-        return 0;
     }
 
     auto tt_data = m_tt.probe(pos, ply);
@@ -284,16 +284,6 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
 Value Worker::quiesce(Position& pos, Stack* ss, Value alpha, Value beta, i32 ply) {
     search_nodes++;
 
-    // 50 mr check
-    if (pos.get_50mr_counter() >= 100) {
-        return 0;
-    }
-
-    // Return eval if we exceed the max ply.
-    if (ply >= MAX_PLY) {
-        return evaluate(pos);
-    }
-
     // Check for hard time limit
     if ((search_nodes & 2047) == 0 && check_tm_hard_limit()) {
         return 0;
@@ -303,6 +293,16 @@ Value Worker::quiesce(Position& pos, Stack* ss, Value alpha, Value beta, i32 ply
     if (search_nodes >= m_search_limits.hard_node_limit) {
         m_stopped = true;
         return 0;
+    }
+
+    // 50 mr check
+    if (pos.get_50mr_counter() >= 100) {
+        return 0;
+    }
+
+    // Return eval if we exceed the max ply.
+    if (ply >= MAX_PLY) {
+        return evaluate(pos);
     }
 
     bool  is_in_check = pos.is_in_check();
