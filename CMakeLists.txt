@@ -77,6 +77,7 @@ set(srcs
         src/repetition_info.cpp
         src/search.cpp
         src/search.hpp
+        src/see.hpp
         src/square.hpp
         src/tm.cpp
         src/tm.hpp
@@ -115,6 +116,8 @@ function(do_test name)
     add_test(${name} ${name})
 endfunction()
 
+do_test(test_see)
+do_test(test_geometry)
 do_test(test_is_legal)
 do_test(test_repetition)
 do_test(test_static_vector)

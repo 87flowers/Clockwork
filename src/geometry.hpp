@@ -132,4 +132,24 @@ inline v512 piece_moves_avx2(bool color, PieceType ptype, Square sq) {
     return v512::eq8_vm(table & bit, bit);
 }
 
+inline v128 ray_indexes(Square focus, v128 sqs) {
+    v128 mask = v128::broadcast8(0x07);
+    v128 file = v128::sub8(sqs & mask, v128::broadcast8(static_cast<u8>(focus.raw & 0x07)));
+    v128 rank = v128::sub8(v128::shr16(sqs, 3) & mask,
+                           v128::broadcast8(static_cast<u8>((focus.raw >> 3) & 0x07)));
+
+    v128 orthf = v128::eq8_vm(file, v128::zero());
+    v128 orthr = v128::eq8_vm(rank, v128::zero());
+    v128 diag  = v128::eq8_vm(v128::abs8(file), v128::abs8(rank));
+    v128 index = (orthf & v128::broadcast8(0x01)) | (orthr & v128::broadcast8(0x02))
+               | (diag & v128::broadcast8(0x04)) | (file & v128::broadcast8(0x08));
+
+    return v128::blend8(
+      rank,
+      v128::permute8(index, v128{std::array<u8, 16>{0xFF, 0, 2, 0xFF, 1, 0xFF, 0xFF, 0xFF, 0xFF,
+                                                    0xFF, 6, 0xFF, 7, 0xFF, 0xFF, 0xFF}}),
+      v128::permute8(index, v128{std::array<u8, 16>{0xFF, 4, 0xFF, 0xFF, 3, 0xFF, 0xFF, 0xFF, 0xFF,
+                                                    0xFF, 0xFF, 0xFF, 5, 0xFF, 0xFF, 0xFF}}));
+}
+
 }

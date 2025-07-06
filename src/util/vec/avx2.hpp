@@ -41,12 +41,29 @@ struct v128 {
         return {_mm_setzero_si128()};
     }
 
+    static forceinline v128 fromMask8(u16 mask) {
+        const v128 bits{std::array<u8, 16>{0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x01,
+                                           0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80}};
+        const v128 x{_mm_blend_epi32(_mm_set1_epi8(static_cast<u8>(mask)),
+                                     _mm_set1_epi8(static_cast<u8>(mask >> 8)), 0b1100)};
+        return v128::eq8_vm(x & bits, bits);
+    }
+
+    static forceinline v128 abs8(v128 a) {
+        return {_mm_abs_epi8(a.raw)};
+    }
+
     static forceinline v128 broadcast8(u8 x) {
         return {_mm_set1_epi8(static_cast<i8>(x))};
     }
 
     static forceinline v128 blend8(v128 mask, v128 a, v128 b) {
         return {_mm_blendv_epi8(a.raw, b.raw, mask.raw)};
+    }
+
+    static forceinline u8 horizontalminu8(v128 x) {
+        x = v128::minu8(v128::shr16(x, 8), x);
+        return static_cast<u8>(_mm_extract_epi8(_mm_minpos_epu16(x.raw), 0));
     }
 
     static forceinline v128 permute8(v128 index, v128 a) {
@@ -77,8 +94,53 @@ struct v128 {
         return static_cast<u16>(~_mm_movemask_epi8(_mm_cmpeq_epi8(a.raw, b.raw)));
     }
 
+    static forceinline v128 eq8_vm(v128 a, v128 b) {
+        return {_mm_cmpeq_epi8(a.raw, b.raw)};
+    }
+
+    static forceinline v128 minu8(v128 a, v128 b) {
+        return {_mm_min_epu8(a.raw, b.raw)};
+    }
+
+    static forceinline v128 shr16(v128 a, i32 shift) {
+        return {_mm_srli_epi16(a.raw, shift)};
+    }
+
+    static forceinline v128 sub8(v128 a, v128 b) {
+        return {_mm_sub_epi8(a.raw, b.raw)};
+    }
+
     [[nodiscard]] forceinline u16 nonzero8() const {
         return neq8(*this, zero());
+    }
+
+    [[nodiscard]] forceinline v128 operator~() const {
+        return {_mm_xor_si128(raw, _mm_set1_epi64x(-1))};
+    }
+
+    friend forceinline v128 operator&(v128 a, v128 b) {
+        return {_mm_and_si128(a.raw, b.raw)};
+    }
+    friend forceinline v128 operator|(v128 a, v128 b) {
+        return {_mm_or_si128(a.raw, b.raw)};
+    }
+    friend forceinline v128 operator^(v128 a, v128 b) {
+        return {_mm_xor_si128(a.raw, b.raw)};
+    }
+    static forceinline v128 andnot(v128 a, v128 b) {
+        return {_mm_andnot_si128(a.raw, b.raw)};
+    }
+
+    friend forceinline v128& operator&=(v128& a, v128 b) {
+        return a = a & b;
+    }
+
+    friend forceinline v128& operator|=(v128& a, v128 b) {
+        return a = a | b;
+    }
+
+    friend forceinline v128& operator^=(v128& a, v128 b) {
+        return a = a ^ b;
     }
 
     [[nodiscard]] forceinline bool operator==(const v128& other) const {
