@@ -358,10 +358,22 @@ Value Worker::search(
     }
 
     MovePicker moves{pos, m_td.history, tt_data ? tt_data->move : Move::none(), ss->killer};
-    Move       best_move    = Move::none();
-    Value      best_value   = -VALUE_INF;
-    i32        moves_played = 0;
-    MoveList   quiets_played;
+
+    // Probcut
+    if (!PV_NODE && !is_in_check && tt_data) {
+        Depth tt_deficiency = std::max(0, depth - tt_data->depth);
+        Value margin        = std::max(800, 36 * tt_deficiency * tt_deficiency);
+        if (beta + margin >= tt_data->score && std::abs(tt_data->score) < VALUE_WIN
+            && (tt_data->bound == Bound::Lower || tt_data->bound == Bound::Exact)
+            && moves.is_legal(tt_data->move)) {
+            return tt_data->score;
+        }
+    }
+
+    Move     best_move    = Move::none();
+    Value    best_value   = -VALUE_INF;
+    i32      moves_played = 0;
+    MoveList quiets_played;
 
     // Clear child's killer move.
     (ss + 1)->killer = Move::none();
