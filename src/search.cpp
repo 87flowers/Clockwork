@@ -449,7 +449,9 @@ Value Worker::search(
             Depth reduced_depth = std::clamp<Depth>(new_depth - reduction, 1, new_depth);
             value = -search<IS_MAIN, false>(pos_after, ss + 1, -alpha - 1, -alpha, reduced_depth,
                                             ply + 1, true);
-            if (value > alpha && reduced_depth < new_depth) {
+
+            bool skip_full_depth = PV_NODE && value >= beta && reduced_depth >= depth - 4;
+            if (!skip_full_depth && value > alpha && reduced_depth < new_depth) {
                 value = -search<IS_MAIN, false>(pos_after, ss + 1, -alpha - 1, -alpha, new_depth,
                                                 ply + 1, !cutnode);
             }
