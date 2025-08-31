@@ -450,7 +450,8 @@ Value Worker::search(
             value = -search<IS_MAIN, false>(pos_after, ss + 1, -alpha - 1, -alpha, reduced_depth,
                                             ply + 1, true);
 
-            bool skip_full_depth = PV_NODE && value >= beta && reduced_depth >= depth - 4;
+            bool skip_full_depth = !is_in_check && value < VALUE_WIN && beta < VALUE_WIN
+                                && value >= beta + 420 && reduced_depth >= depth - 4;
             if (!skip_full_depth && value > alpha && reduced_depth < new_depth) {
                 value = -search<IS_MAIN, false>(pos_after, ss + 1, -alpha - 1, -alpha, new_depth,
                                                 ply + 1, !cutnode);
