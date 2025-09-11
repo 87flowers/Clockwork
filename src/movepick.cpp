@@ -10,17 +10,33 @@ bool quiet_move(Move move) {
 
 void MovePicker::skip_quiets() {
     m_skip_quiets = true;
-    if (m_stage == Stage::EmitQuiet) {
+    switch (m_stage) {
+    case Stage::EmitTTMove:
+    case Stage::GenerateMoves:
+    case Stage::ScoreNoisy:
+    case Stage::EmitGoodNoisy:
+    case Stage::EmitBadNoisy:
+    case Stage::End:
+        // Do nothing
+        break;
+    case Stage::EmitKiller:
+    case Stage::ScoreQuiet:
+    case Stage::EmitQuiet:
         m_current_index = 0;
         m_stage         = Stage::EmitBadNoisy;
+        break;
     }
 }
+
 Move MovePicker::next() {
     switch (m_stage) {
     case Stage::EmitTTMove:
         m_stage = Stage::GenerateMoves;
+
         if (m_tt_move != Move::none() && m_movegen.is_legal(m_tt_move)) {
-            return m_tt_move;
+            if (!m_skip_quiets || (m_skip_quiets && !quiet_move(m_tt_move))) {
+                return m_tt_move;
+            }
         }
 
         [[fallthrough]];
