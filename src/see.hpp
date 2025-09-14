@@ -37,6 +37,11 @@ inline bool see(const Position& pos, Move move, Value threshold) {
     Square sq  = move.to();
     Color  stm = pos.active_color();
 
+    // Early exit if undefended square
+    if (!pos.is_opponent_attacking(sq)) {
+        return true;
+    }
+
     Value score = gain(pos, move) - threshold;
     if (score < 0) {
         return false;

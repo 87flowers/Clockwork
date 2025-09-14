@@ -154,12 +154,20 @@ public:
         return piece_list(color).mask_eq<ptypes...>();
     }
 
+    [[nodiscard]] u16 attackers_of(Square sq, Color color) const {
+        return attack_table(color).read(sq);
+    }
+
+    [[nodiscard]] bool is_opponent_attacking(Square sq) const {
+        return attackers_of(sq, invert(m_active_color));
+    }
+
     [[nodiscard]] bool is_square_attacked_by(Square sq, Color color, PieceType ptype) const {
-        return attack_table(color).read(sq) & piece_list(color).mask_eq(ptype);
+        return attackers_of(sq, color) & piece_list(color).mask_eq(ptype);
     }
 
     [[nodiscard]] bool is_square_attacked_by(Square sq, Color color, PieceId id) const {
-        return (attack_table(color).read(sq) >> id.raw) & 1;
+        return (attackers_of(sq, color) >> id.raw) & 1;
     }
 
     [[nodiscard]] i32 piece_count(Color color) const {
