@@ -22,7 +22,7 @@ public:
                         Search::Stack*  ss) :
         m_pos(pos),
         m_history(history),
-        m_movegen(pos, pin_infos[static_cast<usize>(pos.active_color())]),
+        m_movegen(pos, pin_infos.info(pos.active_color())),
         m_tt_move(tt_move),
         m_killer(ss->killer),
         m_ply(ply),

@@ -151,7 +151,7 @@ private:
       const Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, i32 ply, bool cutnode);
     template<bool IS_MAIN>
     Value quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i32 ply);
-    Value evaluate(const Position& pos);
+    Value evaluate(const Position& pos, const PinInfos& pi);
     bool  check_tm_hard_limit();
 };
 

@@ -132,7 +132,7 @@ std::array<Bitboard, 64> king_ring_table = []() {
     return king_ring_table;
 }();
 
-Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
+Score evaluate_white_pov(const Position& pos, const PinInfos& pi, const PsqtState& psqt_state) {
     const Color us    = pos.active_color();
     i32         phase = pos.piece_count(Color::White, PieceType::Knight)
               + pos.piece_count(Color::Black, PieceType::Knight)
@@ -154,19 +154,19 @@ Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
         Bitboard bb = pos.bitboard_for(c, PieceType::Pawn) | pos.attacked_by(~c, PieceType::Pawn);
         Bitboard king_ring = king_ring_table[pos.king_sq(~c).raw];
         for (PieceId id : pos.get_piece_mask(c, PieceType::Knight)) {
-            mobility += KNIGHT_MOBILITY[pos.mobility_of(c, id, ~bb)];
+            mobility += KNIGHT_MOBILITY[pos.mobility_of(pi, c, id, ~bb)];
             k_attack += KNIGHT_KING_RING[pos.mobility_of(c, id, king_ring)];
         }
         for (PieceId id : pos.get_piece_mask(c, PieceType::Bishop)) {
-            mobility += BISHOP_MOBILITY[pos.mobility_of(c, id, ~bb)];
+            mobility += BISHOP_MOBILITY[pos.mobility_of(pi, c, id, ~bb)];
             k_attack += BISHOP_KING_RING[pos.mobility_of(c, id, king_ring)];
         }
         for (PieceId id : pos.get_piece_mask(c, PieceType::Rook)) {
-            mobility += ROOK_MOBILITY[pos.mobility_of(c, id, ~bb)];
+            mobility += ROOK_MOBILITY[pos.mobility_of(pi, c, id, ~bb)];
             k_attack += ROOK_KING_RING[pos.mobility_of(c, id, king_ring)];
         }
         for (PieceId id : pos.get_piece_mask(c, PieceType::Queen)) {
-            mobility += QUEEN_MOBILITY[pos.mobility_of(c, id, ~bb)];
+            mobility += QUEEN_MOBILITY[pos.mobility_of(pi, c, id, ~bb)];
             k_attack += QUEEN_KING_RING[pos.mobility_of(c, id, king_ring)];
         }
         mobility += KING_MOBILITY[pos.mobility_of(c, PieceId::king(), ~bb)];
@@ -194,10 +194,10 @@ Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
     return sum->phase<24>(phase);
 };
 
-Score evaluate_stm_pov(const Position& pos, const PsqtState& psqt_state) {
+Score evaluate_stm_pov(const Position& pos, const PinInfos& pi, const PsqtState& psqt_state) {
     const Color us = pos.active_color();
-    return (us == Color::White) ? evaluate_white_pov(pos, psqt_state)
-                                : -evaluate_white_pov(pos, psqt_state);
+    return (us == Color::White) ? evaluate_white_pov(pos, pi, psqt_state)
+                                : -evaluate_white_pov(pos, pi, psqt_state);
 }
 
 }  // namespace Clockwork

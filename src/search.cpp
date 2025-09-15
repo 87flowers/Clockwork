@@ -357,7 +357,7 @@ Value Worker::search(
 
     // Return eval if we exceed the max ply.
     if (ply >= MAX_PLY) {
-        return evaluate(pos);
+        return evaluate(pos, pos.calc_pin_infos());
     }
 
     auto tt_data = m_searcher.tt.probe(pos, ply);
@@ -368,14 +368,15 @@ Value Worker::search(
         return tt_data->score;
     }
 
-    bool  is_in_check = pos.is_in_check();
-    bool  improving   = false;
-    Value correction  = 0;
-    Value raw_eval    = -VALUE_INF;
-    ss->static_eval   = -VALUE_INF;
+    PinInfos pin_infos   = pos.calc_pin_infos();
+    bool     is_in_check = pos.is_in_check();
+    bool     improving   = false;
+    Value    correction  = 0;
+    Value    raw_eval    = -VALUE_INF;
+    ss->static_eval      = -VALUE_INF;
     if (!is_in_check) {
         correction      = m_td.history.get_correction(pos);
-        raw_eval        = evaluate(pos);
+        raw_eval        = evaluate(pos, pin_infos);
         ss->static_eval = raw_eval + correction;
         improving = (ss - 2)->static_eval != -VALUE_INF && ss->static_eval > (ss - 2)->static_eval;
     }
@@ -423,7 +424,6 @@ Value Worker::search(
         }
     }
 
-    PinInfos   pin_infos = pos.calc_pin_infos();
     MovePicker moves{pos, pin_infos, m_td.history, tt_data ? tt_data->move : Move::none(), ply, ss};
     Move       best_move    = Move::none();
     Value      best_value   = -VALUE_INF;
@@ -631,7 +631,7 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
 
     // Return eval if we exceed the max ply.
     if (ply >= MAX_PLY) {
-        return evaluate(pos);
+        return evaluate(pos, pos.calc_pin_infos());
     }
 
     // TT Probing
@@ -643,13 +643,14 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
         return tt_data->score;
     }
 
-    bool  is_in_check = pos.is_in_check();
-    Value correction  = 0;
-    Value raw_eval    = -VALUE_INF;
-    Value static_eval = -VALUE_INF;
+    PinInfos pin_infos   = pos.calc_pin_infos();
+    bool     is_in_check = pos.is_in_check();
+    Value    correction  = 0;
+    Value    raw_eval    = -VALUE_INF;
+    Value    static_eval = -VALUE_INF;
     if (!is_in_check) {
         correction  = m_td.history.get_correction(pos);
-        raw_eval    = evaluate(pos);
+        raw_eval    = evaluate(pos, pin_infos);
         static_eval = raw_eval + correction;
     }
 
@@ -659,7 +660,6 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
     }
     alpha = std::max(alpha, static_eval);
 
-    PinInfos   pin_infos = pos.calc_pin_infos();
     MovePicker moves{pos, pin_infos, m_td.history, Move::none(), ply, ss};
     if (!is_in_check) {
         moves.skip_quiets();
@@ -725,9 +725,9 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
     return best_value;
 }
 
-Value Worker::evaluate(const Position& pos) {
+Value Worker::evaluate(const Position& pos, const PinInfos& pin_infos) {
 #ifndef EVAL_TUNING
-    return static_cast<Value>(Clockwork::evaluate_stm_pov(pos, m_td.psqt_states.back()));
+    return static_cast<Value>(Clockwork::evaluate_stm_pov(pos, pin_infos, m_td.psqt_states.back()));
 #else
     return -VALUE_INF;  // Not implemented in tune mode
 #endif
