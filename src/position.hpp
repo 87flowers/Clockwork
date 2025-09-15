@@ -79,6 +79,11 @@ struct RookInfo {
     constexpr bool operator==(const RookInfo&) const = default;
 };
 
+struct PinInfo {
+    Wordboard pin_mask;
+    Bitboard  pinned;
+};
+
 struct CreateSuperpieceMaskInfo {
     u16 padding1 = 0;  // must be zero
     u16 diag;          // north-east, north-west, south-east or south-west (2-7 squares away)
@@ -257,7 +262,7 @@ public:
         return move<true>(m, &psqt_state);
     }
 
-    [[nodiscard]] std::tuple<Wordboard, Bitboard> calc_pin_mask() const;
+    [[nodiscard]] PinInfo calc_pin_info() const;
 
     [[nodiscard]] u16 get_50mr_counter() const;
 
