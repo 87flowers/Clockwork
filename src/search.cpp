@@ -486,6 +486,10 @@ Value Worker::search(
 
             reduction += alpha_raises * 512;
 
+            if (tt_data && m == tt_data->move) {
+                reduction -= 768;
+            }
+
             if (cutnode) {
                 reduction += 1024;
             }
