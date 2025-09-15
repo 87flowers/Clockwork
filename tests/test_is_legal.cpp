@@ -19,7 +19,7 @@ u64 is_legal_perft(const Position& position, usize depth) {
 
     u64 result = 0;
 
-    PinInfo pin_info = position.calc_pin_info();
+    PinInfo pin_info = position.calc_pin_info(position.active_color());
     MoveGen movegen{position, pin_info};
 
     for (u32 i = 0; i < 0x10000; i++) {

@@ -462,8 +462,12 @@ Position Position::null_move() const {
     return new_pos;
 }
 
-PinInfo Position::calc_pin_info() const {
-    Square king_square = king_sq(m_active_color);
+PinInfos Position::calc_pin_infos() const {
+    return {calc_pin_info(Color::White), calc_pin_info(Color::Black)};
+}
+
+PinInfo Position::calc_pin_info(Color color) const {
+    Square king_square = king_sq(color);
 
     auto [ray_coords, ray_valid] = geometry::superpiece_rays(king_square);
     v512 ray_places              = v512::permute8(ray_coords, m_board.to_vec());
@@ -475,7 +479,7 @@ PinInfo Position::calc_pin_info() const {
     v512 occupied = v512::andnot(v512::eq8_vm(ray_places, v512::zero()), ray_valid);
 
     v512 color_mask  = v512::broadcast8(Place::COLOR_MASK);
-    v512 enemy_color = v512::broadcast8(m_active_color == Color::White ? Place::COLOR_MASK : 0);
+    v512 enemy_color = v512::broadcast8(color == Color::White ? Place::COLOR_MASK : 0);
     v512 enemy       = occupied & v512::eq8_vm(ray_places & color_mask, enemy_color);
 
     v512 closest      = occupied & geometry::superpiece_attacks(ray_places, ray_valid);
