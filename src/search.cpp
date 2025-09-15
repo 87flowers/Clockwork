@@ -399,7 +399,8 @@ Value Worker::search(
 
     if (!PV_NODE && !is_in_check && !pos.is_kp_endgame() && depth >= tuned::nmp_depth
         && tt_adjusted_eval >= beta) {
-        int      R = tuned::nmp_base_r + depth / 4 + std::min(3, (tt_adjusted_eval - beta) / 400) + improving;
+        int R =
+          tuned::nmp_base_r + depth / 4 + std::min(3, (tt_adjusted_eval - beta) / 400) + improving;
         Position pos_after = pos.null_move();
 
         repetition_info.push(pos_after.get_hash_key(), true);
@@ -419,6 +420,16 @@ Value Worker::search(
         const Value razor_score = quiesce<IS_MAIN>(pos, ss, alpha, beta, ply);
         if (razor_score <= alpha) {
             return razor_score;
+        }
+    }
+
+    // Classical Beta Probcut
+    if (!PV_NODE && !is_in_check && depth >= 8 && !tt_data) {
+        Value probCutBeta = beta + 420;
+        Value v =
+          search<IS_MAIN, false>(pos, ss, probCutBeta, probCutBeta + 1, depth - 4, ply, cutnode);
+        if (v >= probCutBeta) {
+            return probCutBeta;
         }
     }
 
