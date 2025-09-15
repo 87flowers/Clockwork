@@ -423,6 +423,16 @@ Value Worker::search(
         }
     }
 
+    // Classical Beta Probcut
+    if (!PV_NODE && !is_in_check && depth >= 8 && !tt_data) {
+        Value probCutBeta = beta + 420;
+        Value v =
+          search<IS_MAIN, false>(pos, ss, probCutBeta, probCutBeta + 1, depth - 4, ply, cutnode);
+        if (v >= probCutBeta) {
+            return probCutBeta;
+        }
+    }
+
     MovePicker moves{pos, m_td.history, tt_data ? tt_data->move : Move::none(), ply, ss};
     Move       best_move    = Move::none();
     Value      best_value   = -VALUE_INF;
