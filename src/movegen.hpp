@@ -15,10 +15,11 @@ using MoveList = StaticVector<Move, 256>;
 
 class MoveGen {
 public:
-    explicit MoveGen(const Position& position) :
+    explicit MoveGen(const Position& position, const PinInfo& pin_info) :
         m_active_color(position.active_color()),
-        m_position(position) {
-        std::tie(m_pin_mask, m_pinned) = m_position.calc_pin_mask();
+        m_position(position),
+        m_pin_mask(pin_info.pin_mask),
+        m_pinned(pin_info.pinned) {
     }
 
     [[nodiscard]] bool is_legal(Move m) const;
@@ -60,9 +61,9 @@ private:
 
     [[nodiscard]] bool is_ep_clearance_pinned(PieceMask ep_attackers_mask) const;
 
-    Color           m_active_color;
-    const Position& m_position;
-    Wordboard       m_pin_mask;
-    Bitboard        m_pinned;
+    Color            m_active_color;
+    const Position&  m_position;
+    const Wordboard& m_pin_mask;
+    Bitboard         m_pinned;
 };
 }

@@ -462,7 +462,7 @@ Position Position::null_move() const {
     return new_pos;
 }
 
-std::tuple<Wordboard, Bitboard> Position::calc_pin_mask() const {
+PinInfo Position::calc_pin_info() const {
     Square king_square = king_sq(m_active_color);
 
     auto [ray_coords, ray_valid] = geometry::superpiece_rays(king_square);

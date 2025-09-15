@@ -14,11 +14,15 @@ bool quiet_move(Move move);
 
 class MovePicker {
 public:
-    explicit MovePicker(
-      const Position& pos, const History& history, Move tt_move, i32 ply, Search::Stack* ss) :
+    explicit MovePicker(const Position& pos,
+                        const PinInfo&  pin_info,
+                        const History&  history,
+                        Move            tt_move,
+                        i32             ply,
+                        Search::Stack*  ss) :
         m_pos(pos),
         m_history(history),
-        m_movegen(pos),
+        m_movegen(pos, pin_info),
         m_tt_move(tt_move),
         m_killer(ss->killer),
         m_ply(ply),
