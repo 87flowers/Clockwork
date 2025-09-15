@@ -437,8 +437,8 @@ Value Worker::search(
         }
     }
 
-    PinInfo    pin_info = pos.calc_pin_info();
-    MovePicker moves{pos, pin_info, m_td.history, tt_data ? tt_data->move : Move::none(), ply, ss};
+    PinInfos   pin_infos = pos.calc_pin_infos();
+    MovePicker moves{pos, pin_infos, m_td.history, tt_data ? tt_data->move : Move::none(), ply, ss};
     Move       best_move    = Move::none();
     Value      best_value   = -VALUE_INF;
     i32        moves_played = 0;
@@ -686,8 +686,8 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
     }
     alpha = std::max(alpha, static_eval);
 
-    PinInfo    pin_info = pos.calc_pin_info();
-    MovePicker moves{pos, pin_info, m_td.history, Move::none(), ply, ss};
+    PinInfos   pin_infos = pos.calc_pin_infos();
+    MovePicker moves{pos, pin_infos, m_td.history, Move::none(), ply, ss};
     if (!is_in_check) {
         moves.skip_quiets();
     }

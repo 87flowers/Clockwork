@@ -84,6 +84,8 @@ struct PinInfo {
     Bitboard  pinned;
 };
 
+using PinInfos = std::array<PinInfo, 2>;
+
 struct CreateSuperpieceMaskInfo {
     u16 padding1 = 0;  // must be zero
     u16 diag;          // north-east, north-west, south-east or south-west (2-7 squares away)
@@ -262,7 +264,8 @@ public:
         return move<true>(m, &psqt_state);
     }
 
-    [[nodiscard]] PinInfo calc_pin_info() const;
+    [[nodiscard]] PinInfos calc_pin_infos() const;
+    [[nodiscard]] PinInfo  calc_pin_info(Color color) const;
 
     [[nodiscard]] u16 get_50mr_counter() const;
 

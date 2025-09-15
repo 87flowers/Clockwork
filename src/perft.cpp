@@ -17,7 +17,7 @@ static u64 core(const Position& position, usize depth) {
     u64 result = 0;
 
     MoveList moves;
-    PinInfo  pin_info = position.calc_pin_info();
+    PinInfo  pin_info = position.calc_pin_info(position.active_color());
     MoveGen  movegen{position, pin_info};
     movegen.generate_moves(moves, moves);
 
