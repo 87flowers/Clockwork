@@ -368,6 +368,8 @@ Value Worker::search(
         return tt_data->score;
     }
 
+    Move predicted_best_move = tt_data ? tt_data->move : Move::none();
+
     bool  is_in_check = pos.is_in_check();
     bool  improving   = false;
     Value correction  = 0;
@@ -423,7 +425,18 @@ Value Worker::search(
         }
     }
 
-    MovePicker moves{pos, m_td.history, tt_data ? tt_data->move : Move::none(), ply, ss};
+    // IID with Probcut
+    if (PV_NODE && !is_in_check && depth >= 8 && cutnode && !tt_data) {
+        Value probCutBeta = beta + 300;
+        Value v =
+          search<IS_MAIN, false>(pos, ss, probCutBeta, probCutBeta + 1, depth - 4, ply, cutnode);
+        if (v >= probCutBeta) {
+            return v;
+        }
+        predicted_best_move = ss->pv[0];
+    }
+
+    MovePicker moves{pos, m_td.history, predicted_best_move, ply, ss};
     Move       best_move    = Move::none();
     Value      best_value   = -VALUE_INF;
     i32        moves_played = 0;
