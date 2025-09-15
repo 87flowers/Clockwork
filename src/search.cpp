@@ -399,7 +399,8 @@ Value Worker::search(
 
     if (!PV_NODE && !is_in_check && !pos.is_kp_endgame() && depth >= tuned::nmp_depth
         && tt_adjusted_eval >= beta) {
-        int      R = tuned::nmp_base_r + depth / 4 + std::min(3, (tt_adjusted_eval - beta) / 400) + improving;
+        int R =
+          tuned::nmp_base_r + depth / 4 + std::min(3, (tt_adjusted_eval - beta) / 400) + improving;
         Position pos_after = pos.null_move();
 
         repetition_info.push(pos_after.get_hash_key(), true);
@@ -422,7 +423,8 @@ Value Worker::search(
         }
     }
 
-    MovePicker moves{pos, m_td.history, tt_data ? tt_data->move : Move::none(), ply, ss};
+    PinInfo    pin_info = pos.calc_pin_info();
+    MovePicker moves{pos, pin_info, m_td.history, tt_data ? tt_data->move : Move::none(), ply, ss};
     Move       best_move    = Move::none();
     Value      best_value   = -VALUE_INF;
     i32        moves_played = 0;
@@ -657,7 +659,8 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
     }
     alpha = std::max(alpha, static_eval);
 
-    MovePicker moves{pos, m_td.history, Move::none(), ply, ss};
+    PinInfo    pin_info = pos.calc_pin_info();
+    MovePicker moves{pos, pin_info, m_td.history, Move::none(), ply, ss};
     if (!is_in_check) {
         moves.skip_quiets();
     }

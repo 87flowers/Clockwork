@@ -17,8 +17,10 @@ u64 is_legal_perft(const Position& position, usize depth) {
         return 1;
     }
 
-    u64     result = 0;
-    MoveGen movegen{position};
+    u64 result = 0;
+
+    PinInfo pin_info = position.calc_pin_info();
+    MoveGen movegen{position, pin_info};
 
     for (u32 i = 0; i < 0x10000; i++) {
         Move m = std::bit_cast<Move>(static_cast<u16>(i));

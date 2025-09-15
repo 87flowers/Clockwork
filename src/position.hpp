@@ -79,6 +79,11 @@ struct RookInfo {
     constexpr bool operator==(const RookInfo&) const = default;
 };
 
+struct PinInfo {
+    Wordboard pin_mask;
+    Bitboard  pinned;
+};
+
 struct Position {
 public:
     constexpr Position() = default;
@@ -242,7 +247,7 @@ public:
         return move<true>(m, &psqt_state);
     }
 
-    [[nodiscard]] std::tuple<Wordboard, Bitboard> calc_pin_mask() const;
+    [[nodiscard]] PinInfo calc_pin_info() const;
 
     [[nodiscard]] u16 get_50mr_counter() const;
 
