@@ -76,9 +76,13 @@ template<Color color>
 PScore evaluate_potential_checkers(const Position& pos) {
     constexpr Color opp = ~color;
 
-    const PieceMask orth   = pos.get_piece_mask<PieceType::Rook, PieceType::Queen>(opp);
-    const PieceMask diag   = pos.get_piece_mask<PieceType::Bishop, PieceType::Queen>(opp);
-    const PieceMask knight = pos.get_piece_mask<PieceType::Knight>(opp);
+    PieceMask queen  = pos.get_piece_mask<PieceType::Queen>(opp);
+    PieceMask rook   = pos.get_piece_mask<PieceType::Rook>(opp);
+    PieceMask bishop = pos.get_piece_mask<PieceType::Bishop>(opp);
+    PieceMask knight = pos.get_piece_mask<PieceType::Knight>(opp);
+
+    PieceMask orth = queen | rook;
+    PieceMask diag = queen | bishop;
 
     CreateSuperpieceMaskInfo cmi;
     cmi.knight     = knight.value();
@@ -90,7 +94,13 @@ PScore evaluate_potential_checkers(const Position& pos) {
 
     Wordboard mask = pos.create_attack_table_superpiece_mask(pos.king_sq(color), cmi);
     mask           = mask & pos.attack_table(opp);
-    return POTENTIAL_CHECKER_VAL * mask.popcount();
+
+    PScore eval = PSCORE_ZERO;
+    eval += KNIGHT_POTENTIAL_CHECKER_VAL * mask.popcount(knight);
+    eval += BISHOP_POTENTIAL_CHECKER_VAL * mask.popcount(bishop);
+    eval += ROOK_POTENTIAL_CHECKER_VAL * mask.popcount(rook);
+    eval += QUEEN_POTENTIAL_CHECKER_VAL * mask.popcount(queen);
+    return eval;
 }
 
 Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {

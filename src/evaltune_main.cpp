@@ -141,8 +141,14 @@ int main(int argc, char* argv[]) {
                   << std::endl;
         std::cout << std::endl;
 
-        std::cout << "inline const PScore POTENTIAL_CHECKER_VAL = " << POTENTIAL_CHECKER_VAL << ";"
-                  << std::endl;
+        std::cout << "inline const PScore KNIGHT_POTENTIAL_CHECKER_VAL = "
+                  << KNIGHT_POTENTIAL_CHECKER_VAL << ";" << std::endl;
+        std::cout << "inline const PScore BISHOP_POTENTIAL_CHECKER_VAL = "
+                  << BISHOP_POTENTIAL_CHECKER_VAL << ";" << std::endl;
+        std::cout << "inline const PScore ROOK_POTENTIAL_CHECKER_VAL   = "
+                  << ROOK_POTENTIAL_CHECKER_VAL << ";" << std::endl;
+        std::cout << "inline const PScore QUEEN_POTENTIAL_CHECKER_VAL  = "
+                  << QUEEN_POTENTIAL_CHECKER_VAL << ";" << std::endl;
         std::cout << std::endl;
 
         auto print_table = [](const std::string& name, const auto& table) {
