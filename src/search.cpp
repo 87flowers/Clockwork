@@ -424,7 +424,7 @@ Value Worker::search(
     }
 
     // Classical Beta Probcut
-    if (!PV_NODE && !is_in_check && depth >= 8 && !tt_data) {
+    if (!PV_NODE && !is_in_check && depth >= 8 && cutnode && !tt_data) {
         Value probCutBeta = beta + 300;
         Value v =
           search<IS_MAIN, false>(pos, ss, probCutBeta, probCutBeta + 1, depth - 4, ply, cutnode);
