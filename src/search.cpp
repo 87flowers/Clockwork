@@ -427,12 +427,7 @@ Value Worker::search(
 
     // IID with Probcut
     if (PV_NODE && !is_in_check && depth >= 8 && !tt_data) {
-        Value probCutBeta = beta + 300;
-        Value v =
-          search<IS_MAIN, PV_NODE>(pos, ss, probCutBeta, probCutBeta + 1, depth - 4, ply, cutnode);
-        if (v >= probCutBeta) {
-            return v;
-        }
+        search<IS_MAIN, PV_NODE>(pos, ss, beta, beta + 1, depth - 2, ply, cutnode);
         predicted_best_move = ss->pv[0];
     }
 
