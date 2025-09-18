@@ -10,7 +10,7 @@ bool quiet_move(Move move) {
 
 void MovePicker::skip_quiets() {
     m_skip_quiets = true;
-    if (m_stage == Stage::EmitQuiet) {
+    if (m_stage > Stage::EmitGoodNoisy && m_stage < Stage::EmitBadNoisy) {
         m_current_index = 0;
         m_stage         = Stage::EmitBadNoisy;
     }
