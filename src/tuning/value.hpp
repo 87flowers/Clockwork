@@ -72,8 +72,6 @@ public:
     inline void zero_grad() {
         m_gradient = 0.0;
     }
-
-    static ValuePtr create_tunable(f64 data);
     static ValuePtr create(f64 data);
 
     ValuePtr exp() {
@@ -315,8 +313,6 @@ public:
         m_values(values),
         m_gradients(f128::zero()) {
     }
-
-    static PairPtr create_tunable(f64 first, f64 second);
 
     static PairPtr create(f64 first, f64 second);
 
