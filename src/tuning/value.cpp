@@ -4,8 +4,7 @@
 #include "util/vec/sse2.hpp"
 #include <iostream>
 
-namespace Clockwork {
-namespace Autograd {
+namespace Clockwork::Autograd {
 
 ValuePtr Value::create_tunable(f64 data) {
     ValuePtr res = std::make_shared<Value>(data);
@@ -37,6 +36,4 @@ PairPtr Pair::create(const f128& values) {
     return res;
 }
 
-
-}  // namespace Autograd
-}  // namespace Clockwork
+}  // namespace Clockwork::Autograd

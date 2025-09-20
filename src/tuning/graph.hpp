@@ -4,8 +4,7 @@
 #include <memory>
 #include <vector>
 
-namespace Clockwork {
-namespace Autograd {
+namespace Clockwork::Autograd {
 
 class Backwardable;
 using BackwardablePtr = std::shared_ptr<Backwardable>;
@@ -30,11 +29,11 @@ private:
     // All backwardable nodes in insertion order (intermediates + outputs + parameters)
     std::vector<BackwardablePtr> m_backwardables;
 
-    Graph() = default;
+    Graph();
 
 public:
     static std::shared_ptr<Graph> get() {
-        static std::shared_ptr<Graph> instance(new Graph());
+        thread_local std::shared_ptr<Graph> instance(new Graph());
         return instance;
     }
 
@@ -107,7 +106,9 @@ public:
     const std::vector<PairPtr>& get_pair_parameters() const {
         return m_pair_parameters;
     }
+    PairPtr get_pair_parameter(usize index) const {
+        return m_pair_parameters[index];
+    }
 };
 
-}  // namespace Autograd
-}  // namespace Clockwork
+}  // namespace Clockwork::Autograd
