@@ -9,9 +9,7 @@
 #include <memory>
 #include <vector>
 
-namespace Clockwork {
-
-namespace Autograd {
+namespace Clockwork::Autograd {
 
 // Forward declarations
 
@@ -615,5 +613,5 @@ inline PairPtr& operator/=(PairPtr& a, const ValuePtr& v) {
     a = a / v;
     return a;
 }
-}
-}
+
+}  // namespace Clockwork::Autograd
