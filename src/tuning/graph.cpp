@@ -4,7 +4,7 @@
 namespace Clockwork::Autograd {
 
 Graph::Graph() {
-    for (PairPlaceholderPtr placeholder : Globals::get().m_pair_parameters) {
+    for (PairPlaceholder* placeholder : Globals::get().get_pair_parameters()) {
         register_param(
           std::make_shared<Pair>(placeholder->default_value(), placeholder->constant()));
     }

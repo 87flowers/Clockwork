@@ -8,8 +8,7 @@
 #include <memory>
 #include <vector>
 
-namespace Clockwork {
-namespace Autograd {
+namespace Clockwork::Autograd {
 
 class SGD {
 private:
@@ -177,5 +176,4 @@ public:
     }
 };
 
-}  // namespace Autograd
-}  // namespace Clockwork
+}  // namespace Clockwork::Autograd
