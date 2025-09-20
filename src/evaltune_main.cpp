@@ -98,16 +98,16 @@ int main() {
 
         size_t total_batches = (positions.size() + batch_size - 1) / batch_size;
 
-        for (size_t batch_idx = 0, start = 0; start < positions.size();
-             start += batch_size, ++batch_idx) {
-            size_t end = std::min(start + batch_size, positions.size());
+        for (size_t batch_idx = 0, batch_start = 0; batch_start < positions.size();
+             batch_start += batch_size, ++batch_idx) {
+            size_t batch_end = std::min(batch_start + batch_size, positions.size());
 
             std::vector<Clockwork::Autograd::ValuePtr> batch_outputs;
             std::vector<f64>                           batch_targets;
-            batch_outputs.reserve(end - start);
-            batch_targets.reserve(end - start);
+            batch_outputs.reserve(batch_end - batch_start);
+            batch_targets.reserve(batch_end - batch_start);
 
-            for (size_t j = start; j < end; ++j) {
+            for (size_t j = batch_start; j < batch_end; ++j) {
                 size_t   idx    = indices[j];
                 f64      y      = results[idx];
                 Position pos    = positions[idx];

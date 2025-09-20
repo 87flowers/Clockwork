@@ -11,6 +11,7 @@
 
 namespace Clockwork::Autograd {
 
+class ValuePlaceholder;
 class PairPlaceholder;
 
 class Globals {
@@ -31,19 +32,36 @@ public:
         return index;
     }
 
-    void lock() {
-        m_locked = true;
+    std::vector<ValuePlaceholder*> get_parameters() const {
+        lock();
+        return {};
     }
 
     std::vector<PairPlaceholder*> get_pair_parameters() const {
-        m_locked = true;
+        lock();
         return m_pair_parameters;
     }
 
+    usize get_parameter_count() const {
+        lock();
+        return 0;
+    }
+
+    usize get_pair_parameter_count() const {
+        lock();
+        return m_pair_parameters.size();
+    }
+
 private:
+    void lock() const {
+        m_locked = true;
+    }
+
     mutable std::atomic<bool>     m_locked = false;
     std::vector<PairPlaceholder*> m_pair_parameters;
 };
+
+class ValuePlaceholder {};
 
 class PairPlaceholder {
 public:

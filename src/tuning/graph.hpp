@@ -1,6 +1,8 @@
 #pragma once
 
 #include "value.hpp"
+#include <exception>
+#include <iostream>
 #include <memory>
 #include <vector>
 
@@ -58,6 +60,22 @@ public:
 
     void register_value(const PairPtr& node) {
         m_backwardables.push_back(std::static_pointer_cast<Backwardable>(node));
+    }
+
+    // ------------------- Copy Values -------------------
+    void copy_parameter_values(const Graph& source) {
+        if (source.m_parameters.size() != m_parameters.size()
+            || source.m_pair_parameters.size() != m_pair_parameters.size()) {
+            std::cerr << "Graph parameters count have desynced" << std::endl;
+            std::terminate();
+        }
+
+        for (usize i = 0; i < m_parameters.size(); i++) {
+            m_parameters[i]->set_value(source.m_parameters[i]->get_value());
+        }
+        for (usize i = 0; i < m_pair_parameters.size(); i++) {
+            m_pair_parameters[i]->set_values(source.m_pair_parameters[i]->get_values());
+        }
     }
 
     // ------------------ Backward Pass ------------------

@@ -318,13 +318,16 @@ public:
 
     static PairPtr create(const f128& values);
 
-
     inline f64 first() const {
         return m_values.first();
     }
 
     inline f64 second() const {
         return m_values.second();
+    }
+
+    inline f128 get_values() const {
+        return m_values;
     }
 
     inline f64 grad_first() const {
