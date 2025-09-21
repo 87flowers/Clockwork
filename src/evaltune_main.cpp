@@ -147,14 +147,11 @@ int main() {
                     auto loss = mse(subbatch_outputs, subbatch_targets);
                     Graph::get().backward();
 
-                    double subbatch_contribution = static_cast<double>(current_subbatch_size)
-                                                 / static_cast<double>(current_batch_size);
                     Parameters subbatch_gradients = Graph::get().get_all_parameter_gradients();
 
                     {
                         std::lock_guard guard{mutex};
-                        batch_gradients.weighted_accumulate(subbatch_contribution,
-                                                            subbatch_gradients);
+                        batch_gradients.weighted_accumulate(1.0, subbatch_gradients);
                     }
 
                     Graph::get().cleanup();
