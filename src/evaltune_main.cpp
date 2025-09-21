@@ -95,7 +95,7 @@ int main() {
 
     i32       epochs     = 1000;
     const f64 K          = 1.0 / 400;
-    size_t    batch_size = thread_count * 16384;  // Set batch size here
+    size_t    batch_size = 16384;  // Set batch size here
 
     std::mt19937 rng(std::random_device{}());  // Random number generator for shuffling
 
@@ -120,12 +120,11 @@ int main() {
             std::mutex               mutex;
             std::vector<std::thread> threads;
 
-            for (size_t subbatch_start = 0; subbatch_start < current_batch_size;
+            for (size_t subbatch_start = batch_start; subbatch_start < batch_end;
                  subbatch_start += subbatch_size) {
 
                 threads.emplace_back([&, subbatch_start] {
-                    size_t subbatch_end =
-                      std::min(subbatch_start + subbatch_size, current_batch_size);
+                    size_t subbatch_end = std::min(subbatch_start + subbatch_size, batch_end);
                     size_t current_subbatch_size = subbatch_end - subbatch_start;
 
                     std::vector<ValuePtr> subbatch_outputs;
@@ -184,14 +183,17 @@ int main() {
         std::cout << "inline const PParam TEMPO_VAL  = " << TEMPO_VAL << ";" << std::endl;
         std::cout << std::endl;
 
-        std::cout << "inline const PParam BISHOP_PAIR_VAL  = " << BISHOP_PAIR_VAL << ";"
+        std::cout << "inline const PParam BISHOP_PAIR_VAL     = " << BISHOP_PAIR_VAL << ";"
                   << std::endl;
-        std::cout << "inline const PParam DOUBLED_PAWN_VAL = " << DOUBLED_PAWN_VAL << ";"
+        std::cout << "inline const PParam DOUBLED_PAWN_VAL    = " << DOUBLED_PAWN_VAL << ";"
+                  << std::endl;
+        std::cout << "inline const PParam ROOKS_CONNECTED_VAL = " << ROOKS_CONNECTED_VAL << ";"
                   << std::endl;
         std::cout << std::endl;
 
         std::cout << "inline const PParam POTENTIAL_CHECKER_VAL = " << POTENTIAL_CHECKER_VAL << ";"
                   << std::endl;
+        std::cout << std::endl;
 
         auto print_table = [](const std::string& name, const auto& table) {
             std::cout << "inline const std::array<PParam, " << table.size() << "> " << name

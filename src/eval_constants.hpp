@@ -12,10 +12,12 @@ inline const PParam ROOK_MAT   = S(1538, 1795);
 inline const PParam QUEEN_MAT  = S(3381, 3253);
 inline const PParam TEMPO_VAL  = S(26, 17);
 
-inline const PParam BISHOP_PAIR_VAL  = S(76, 195);
-inline const PParam DOUBLED_PAWN_VAL = S(-52, -82);
+inline const PParam BISHOP_PAIR_VAL     = S(76, 195);
+inline const PParam DOUBLED_PAWN_VAL    = S(-52, -82);
+inline const PParam ROOKS_CONNECTED_VAL = S(0, 0);
 
 inline const PParam POTENTIAL_CHECKER_VAL = S(-72, -3);
+
 inline const std::array<PParam, 6> PAWN_PHALANX = {
     S(-3, 21), S(53, 26), S(85, 69), S(185, 150), S(569, 522), S(1602, 1557),
 };
