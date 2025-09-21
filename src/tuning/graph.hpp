@@ -1,6 +1,7 @@
 #pragma once
 
-#include "value.hpp"
+#include "tuning/info.hpp"
+#include "tuning/value.hpp"
 #include <exception>
 #include <iostream>
 #include <memory>
@@ -63,19 +64,45 @@ public:
     }
 
     // ------------------- Copy Values -------------------
-    void copy_parameter_values(const Graph& source) {
-        if (source.m_parameters.size() != m_parameters.size()
-            || source.m_pair_parameters.size() != m_pair_parameters.size()) {
+    void copy_parameter_values(const Parameters& source) {
+        if (source.parameters.size() != m_parameters.size()
+            || source.pair_parameters.size() != m_pair_parameters.size()) {
             std::cerr << "Graph parameters count have desynced" << std::endl;
             std::terminate();
         }
 
         for (usize i = 0; i < m_parameters.size(); i++) {
-            m_parameters[i]->set_value(source.m_parameters[i]->get_value());
+            m_parameters[i]->set_value(source.parameters[i]);
         }
         for (usize i = 0; i < m_pair_parameters.size(); i++) {
-            m_pair_parameters[i]->set_values(source.m_pair_parameters[i]->get_values());
+            m_pair_parameters[i]->set_values(source.pair_parameters[i]);
         }
+    }
+
+    Parameters get_all_parameter_values() const {
+        Parameters result;
+        result.parameters.resize(m_parameters.size());
+        result.pair_parameters.resize(m_pair_parameters.size());
+        for (usize i = 0; i < m_parameters.size(); i++) {
+            result.parameters[i] = m_parameters[i]->get_value();
+        }
+        for (usize i = 0; i < m_pair_parameters.size(); i++) {
+            result.pair_parameters[i] = m_pair_parameters[i]->get_values();
+        }
+        return result;
+    }
+
+    Parameters get_all_parameter_gradients() const {
+        Parameters result;
+        result.parameters.resize(m_parameters.size());
+        result.pair_parameters.resize(m_pair_parameters.size());
+        for (usize i = 0; i < m_parameters.size(); i++) {
+            result.parameters[i] = m_parameters[i]->get_gradient();
+        }
+        for (usize i = 0; i < m_pair_parameters.size(); i++) {
+            result.pair_parameters[i] = m_pair_parameters[i]->get_graidents();
+        }
+        return result;
     }
 
     // ------------------ Backward Pass ------------------

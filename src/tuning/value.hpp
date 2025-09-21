@@ -338,6 +338,10 @@ public:
         return m_gradients.second();
     }
 
+    inline f128 get_graidents() const {
+        return m_gradients;
+    }
+
     inline void zero_grad() {
         m_gradients = f128::zero();
     }

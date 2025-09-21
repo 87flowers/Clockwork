@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tuning/graph.hpp"
+#include "tuning/info.hpp"
 #include "tuning/value.hpp"
 #include "util/types.hpp"
 
@@ -42,14 +43,9 @@ public:
         return m_pair_parameters;
     }
 
-    usize get_parameter_count() const {
+    ParameterCountInfo get_parameter_counts() const {
         lock();
-        return 0;
-    }
-
-    usize get_pair_parameter_count() const {
-        lock();
-        return m_pair_parameters.size();
+        return {0, m_pair_parameters.size()};
     }
 
 private:

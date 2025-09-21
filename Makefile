@@ -51,7 +51,7 @@ evaltune:
 	$(COPY) $(call MK_PATH,"build-evaltune/clockwork-evaltune$(SUFFIX)") $(EXE)-evaltune$(SUFFIX)
 
 evaltune-debug:
-	cmake -DCMAKE_BUILD_TYPE=Debug $(CMAKE_FLAGS) -DCLOCKWORK_ENABLE_EVALTUNE=ON -B build-evaltune-debug -S . && cmake --build build-evaltune-debug $(CMAKE_BUILD_FLAGS)
+	cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo $(CMAKE_FLAGS) -DCLOCKWORK_ENABLE_EVALTUNE=ON -B build-evaltune-debug -S . && cmake --build build-evaltune-debug $(CMAKE_BUILD_FLAGS)
 	$(COPY) $(call MK_PATH,"build-evaltune-debug/clockwork-evaltune$(SUFFIX)") $(EXE)-evaltune$(SUFFIX)
 
 bench: release
