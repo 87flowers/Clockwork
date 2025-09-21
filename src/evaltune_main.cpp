@@ -89,7 +89,7 @@ int main() {
     using namespace Clockwork::Autograd;
 
     ParameterCountInfo parameter_count          = Globals::get().get_parameter_counts();
-    Parameters         current_parameter_values = Graph::get()->get_all_parameter_values();
+    Parameters         current_parameter_values = Graph::get().get_all_parameter_values();
 
     AdamW optim(parameter_count, 10, 0.9, 0.999, 1e-8, 0.0);
 
@@ -133,7 +133,7 @@ int main() {
                     subbatch_outputs.reserve(current_subbatch_size);
                     subbatch_targets.reserve(current_subbatch_size);
 
-                    Graph::get()->copy_parameter_values(current_parameter_values);
+                    Graph::get().copy_parameter_values(current_parameter_values);
 
                     for (size_t j = subbatch_start; j < subbatch_end; ++j) {
                         size_t   idx    = indices[j];
@@ -145,15 +145,19 @@ int main() {
                     }
 
                     auto loss = mse(subbatch_outputs, subbatch_targets);
-                    Graph::get()->backward();
+                    Graph::get().backward();
 
                     double subbatch_contribution = static_cast<double>(current_subbatch_size)
                                                  / static_cast<double>(current_batch_size);
-                    Parameters subbatch_gradients = Graph::get()->get_all_parameter_gradients();
-                    Graph::get()->cleanup();
+                    Parameters subbatch_gradients = Graph::get().get_all_parameter_gradients();
 
-                    std::lock_guard guard{mutex};
-                    batch_gradients.weighted_accumulate(subbatch_contribution, subbatch_gradients);
+                    {
+                        std::lock_guard guard{mutex};
+                        batch_gradients.weighted_accumulate(subbatch_contribution,
+                                                            subbatch_gradients);
+                    }
+
+                    Graph::get().cleanup();
                 });
             }
 
@@ -170,7 +174,7 @@ int main() {
         std::cout << std::endl;  // Finish progress bar line
 
         // Print current values
-        Graph::get()->copy_parameter_values(current_parameter_values);
+        Graph::get().copy_parameter_values(current_parameter_values);
 
         std::cout << "inline const PParam PAWN_MAT   = " << PAWN_MAT << ";" << std::endl;
         std::cout << "inline const PParam KNIGHT_MAT = " << KNIGHT_MAT << ";" << std::endl;

@@ -45,9 +45,9 @@ private:
     }
 
 public:
-    static std::shared_ptr<Graph> get() {
+    static Graph& get() {
         thread_local std::shared_ptr<Graph> instance(new Graph());
-        return instance;
+        return *instance;
     }
 
     // ------------------ Registration ------------------

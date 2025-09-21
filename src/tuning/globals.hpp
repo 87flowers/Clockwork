@@ -46,7 +46,7 @@ public:
 
     std::vector<ValuePlaceholder*> get_parameters() const {
         lock();
-        return {};
+        return m_parameters;
     }
 
     std::vector<PairPlaceholder*> get_pair_parameters() const {
@@ -56,7 +56,7 @@ public:
 
     ParameterCountInfo get_parameter_counts() const {
         lock();
-        return {0, m_pair_parameters.size()};
+        return {m_parameters.size(), m_pair_parameters.size()};
     }
 
     bool is_parameter_constant(usize i) const;
@@ -90,7 +90,7 @@ public:
     }
 
     operator ValuePtr() const {
-        return Graph::get()->get_parameter(m_index);
+        return Graph::get().get_parameter(m_index);
     }
 
     usize index() const {
@@ -157,7 +157,7 @@ public:
     }
 
     operator PairPtr() const {
-        return Graph::get()->get_pair_parameter(m_index);
+        return Graph::get().get_pair_parameter(m_index);
     }
 
     usize index() const {
