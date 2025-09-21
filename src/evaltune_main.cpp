@@ -89,7 +89,7 @@ int main() {
     using namespace Clockwork::Autograd;
 
     ParameterCountInfo parameter_count          = Globals::get().get_parameter_counts();
-    Parameters         current_parameter_values = Parameters::zeros(parameter_count);
+    Parameters         current_parameter_values = Graph::get()->get_all_parameter_values();
 
     AdamW optim(parameter_count, 10, 0.9, 0.999, 1e-8, 0.0);
 
