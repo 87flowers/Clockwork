@@ -106,11 +106,6 @@ PScore evaluate_pieces(const Position& pos) {
         eval += BISHOP_PAIR_VAL;
     }
 
-    if (!(pos.bitboard_for(color, PieceType::Rook) & pos.attacked_by(color, PieceType::Rook))
-           .empty()) {
-        eval += ROOKS_CONNECTED_VAL;
-    }
-
     return eval;
 }
 

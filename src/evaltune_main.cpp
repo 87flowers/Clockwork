@@ -187,8 +187,6 @@ int main() {
                   << std::endl;
         std::cout << "inline const PParam DOUBLED_PAWN_VAL    = " << DOUBLED_PAWN_VAL << ";"
                   << std::endl;
-        std::cout << "inline const PParam ROOKS_CONNECTED_VAL = " << ROOKS_CONNECTED_VAL << ";"
-                  << std::endl;
         std::cout << std::endl;
 
         std::cout << "inline const PParam POTENTIAL_CHECKER_VAL = " << POTENTIAL_CHECKER_VAL << ";"

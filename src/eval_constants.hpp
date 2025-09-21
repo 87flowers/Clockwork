@@ -14,7 +14,6 @@ inline const PParam TEMPO_VAL  = S(26, 17);
 
 inline const PParam BISHOP_PAIR_VAL     = S(76, 195);
 inline const PParam DOUBLED_PAWN_VAL    = S(-52, -82);
-inline const PParam ROOKS_CONNECTED_VAL = S(0, 0);
 
 inline const PParam POTENTIAL_CHECKER_VAL = S(-72, -3);
 
