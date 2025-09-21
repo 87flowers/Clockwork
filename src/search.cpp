@@ -434,10 +434,11 @@ Value Worker::search(
     MovePicker moves{pos, m_td.history, tt_data ? tt_data->move : Move::none(), ply, ss};
 
     // TT Beta Probcut
+    Value probcutThreshold = beta + 500;
     if (!PV_NODE && !is_in_check && tt_data && std::abs(tt_data->score) < VALUE_WIN
-        && tt_data->score >= beta + 500 && tt_data->depth >= depth - 5
+        && tt_data->score >= probcutThreshold && tt_data->depth >= depth - 5
         && moves.is_legal(tt_data->move)) {
-        return tt_data->score;
+        return probcutThreshold;
     }
 
     Move     best_move    = Move::none();
