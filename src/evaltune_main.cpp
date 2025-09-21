@@ -184,14 +184,17 @@ int main() {
         std::cout << "inline const PParam TEMPO_VAL  = " << TEMPO_VAL << ";" << std::endl;
         std::cout << std::endl;
 
-        std::cout << "inline const PParam BISHOP_PAIR_VAL  = " << BISHOP_PAIR_VAL << ";"
+        std::cout << "inline const PParam BISHOP_PAIR_VAL    = " << BISHOP_PAIR_VAL << ";"
                   << std::endl;
-        std::cout << "inline const PParam DOUBLED_PAWN_VAL = " << DOUBLED_PAWN_VAL << ";"
+        std::cout << "inline const PParam DOUBLED_PAWN_VAL   = " << DOUBLED_PAWN_VAL << ";"
+                  << std::endl;
+        std::cout << "inline const PParam ROOK_FORWARD_BONUS = " << ROOK_FORWARD_BONUS << ";"
                   << std::endl;
         std::cout << std::endl;
 
         std::cout << "inline const PParam POTENTIAL_CHECKER_VAL = " << POTENTIAL_CHECKER_VAL << ";"
                   << std::endl;
+        std::cout << std::endl;
 
         auto print_table = [](const std::string& name, const auto& table) {
             std::cout << "inline const std::array<PParam, " << table.size() << "> " << name

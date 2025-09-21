@@ -43,6 +43,14 @@ public:
         return Bitboard{static_cast<u64>(0xFF) << rank};
     }
 
+    static constexpr Bitboard relative_rank_mask(Color color, i32 rank) {
+        assert(rank >= 0 && rank <= 7);
+        if (color == Color::Black) {
+            rank = 7 ^ rank;
+        }
+        return Bitboard{static_cast<u64>(0xFF) << rank};
+    }
+
     [[nodiscard]] bool empty() const {
         return m_raw == 0;
     }

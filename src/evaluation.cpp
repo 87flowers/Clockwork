@@ -14,6 +14,15 @@
 
 namespace Clockwork {
 
+constexpr i32 RANK_1 = 0;
+constexpr i32 RANK_2 = 1;
+constexpr i32 RANK_3 = 2;
+constexpr i32 RANK_4 = 3;
+constexpr i32 RANK_5 = 4;
+constexpr i32 RANK_6 = 5;
+constexpr i32 RANK_7 = 6;
+constexpr i32 RANK_8 = 7;
+
 std::array<Bitboard, 64> king_ring_table = []() {
     std::array<Bitboard, 64> king_ring_table{};
     for (u8 sq_idx = 0; sq_idx < 64; sq_idx++) {
@@ -50,9 +59,6 @@ std::array<std::array<Bitboard, 64>, 2> passed_pawn_spans = []() {
 
 template<Color color>
 PScore evaluate_pawns(const Position& pos) {
-    constexpr i32 RANK_2 = 1;
-    constexpr i32 RANK_3 = 2;
-
     Bitboard pawns     = pos.board().bitboard_for(color, PieceType::Pawn);
     Bitboard opp_pawns = pos.board().bitboard_for(~color, PieceType::Pawn);
     PScore   eval      = PSCORE_ZERO;
@@ -105,6 +111,11 @@ PScore evaluate_pieces(const Position& pos) {
     if (pos.piece_count(color, PieceType::Bishop) >= 2) {
         eval += BISHOP_PAIR_VAL;
     }
+
+    constexpr Bitboard back_two_ranks =
+      Bitboard::relative_rank_mask(color, RANK_7) | Bitboard::relative_rank_mask(color, RANK_8);
+    eval +=
+      ROOK_FORWARD_BONUS * (back_two_ranks & pos.attacked_by(color, PieceType::Rook)).popcount();
 
     return eval;
 }
