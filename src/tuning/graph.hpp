@@ -151,6 +151,9 @@ public:
     const std::vector<PairPtr>& get_pair_parameters() const {
         return m_pair_parameters;
     }
+    ValuePtr get_parameter(usize index) const {
+        return m_parameters[index];
+    }
     PairPtr get_pair_parameter(usize index) const {
         return m_pair_parameters[index];
     }

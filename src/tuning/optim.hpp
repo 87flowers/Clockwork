@@ -1,6 +1,6 @@
 #pragma once
 
-#include "tuning/graph.hpp"
+#include "tuning/globals.hpp"
 #include "tuning/info.hpp"
 #include "util/types.hpp"
 #include "util/vec/sse2.hpp"
@@ -33,6 +33,10 @@ public:
     void step(Parameters& values, const Parameters& gradients) {
         // ---- Value parameters ----
         for (size_t i = 0; i < m_counts.parameter_count; ++i) {
+            if (Globals::get().is_parameter_constant(i)) {
+                continue;
+            }
+
             auto& p_value = values.parameters[i];
             auto& p_grad  = gradients.parameters[i];
             auto& v       = m_value_velocity[i];
@@ -44,6 +48,10 @@ public:
 
         // ---- Pair parameters ----
         for (size_t i = 0; i < m_counts.pair_parameter_count; ++i) {
+            if (Globals::get().is_pair_parameter_constant(i)) {
+                continue;
+            }
+
             auto& p_value = values.pair_parameters[i];
             auto& p_grad  = gradients.pair_parameters[i];
             auto& v       = m_pair_velocity[i];
@@ -114,6 +122,10 @@ public:
 
         // ---------------- Value parameters ----------------
         for (size_t i = 0; i < m_counts.parameter_count; ++i) {
+            if (Globals::get().is_parameter_constant(i)) {
+                continue;
+            }
+
             auto& p = values.parameters[i];
             auto& g = gradients.parameters[i];
 
@@ -135,6 +147,10 @@ public:
 
         // ---------------- Pair parameters ----------------
         for (size_t i = 0; i < m_counts.pair_parameter_count; ++i) {
+            if (Globals::get().is_pair_parameter_constant(i)) {
+                continue;
+            }
+
             auto& p = values.pair_parameters[i];
             auto& g = gradients.pair_parameters[i];
             auto& m = m_pair_m[i];
