@@ -30,8 +30,10 @@ int main() {
     // List of files to load
     std::vector<std::string> fenFiles = {"data/v2.2/filtered_data.txt"};
 
-    // Number of threads to use, default to half available
-    u32 thread_count = std::max<u32>(1, std::thread::hardware_concurrency() / 2);
+    // Number of threads to use, default to three quarters available
+    u32 thread_count = std::max<u32>(1, std::thread::hardware_concurrency() * 3 / 4);
+
+    std::cout << "Running on " << thread_count << " threads" << std::endl;
 
     for (const auto& filename : fenFiles) {
         std::ifstream fenFile(filename);
@@ -87,7 +89,7 @@ int main() {
     using namespace Clockwork::Autograd;
 
     ParameterCountInfo parameter_count          = Globals::get().get_parameter_counts();
-    Parameters         current_parameter_values = Graph::get()->get_all_parameter_values();
+    Parameters         current_parameter_values = Parameters::zeros(parameter_count);
 
     AdamW optim(parameter_count, 10, 0.9, 0.999, 1e-8, 0.0);
 
@@ -115,36 +117,48 @@ int main() {
 
             Parameters batch_gradients = Parameters::zeros(parameter_count);
 
-            for (size_t subbatch_idx = 0, subbatch_start = 0; subbatch_start < current_batch_size;
-                 subbatch_idx++, subbatch_start += subbatch_size) {
-                size_t subbatch_end = std::min(subbatch_start + subbatch_size, current_batch_size);
-                size_t current_subbatch_size = subbatch_end - subbatch_start;
+            std::mutex               mutex;
+            std::vector<std::thread> threads;
 
-                std::vector<ValuePtr> subbatch_outputs;
-                std::vector<f64>      subbatch_targets;
-                subbatch_outputs.reserve(current_subbatch_size);
-                subbatch_targets.reserve(current_subbatch_size);
+            for (size_t subbatch_start = 0; subbatch_start < current_batch_size;
+                 subbatch_start += subbatch_size) {
 
-                Graph::get()->copy_parameter_values(current_parameter_values);
+                threads.emplace_back([&, subbatch_start] {
+                    size_t subbatch_end =
+                      std::min(subbatch_start + subbatch_size, current_batch_size);
+                    size_t current_subbatch_size = subbatch_end - subbatch_start;
 
-                for (size_t j = subbatch_start; j < subbatch_end; ++j) {
-                    size_t   idx    = indices[j];
-                    f64      y      = results[idx];
-                    Position pos    = positions[idx];
-                    auto     result = (evaluate_white_pov(pos) * K)->sigmoid();
-                    subbatch_outputs.push_back(result);
-                    subbatch_targets.push_back(y);
-                }
+                    std::vector<ValuePtr> subbatch_outputs;
+                    std::vector<f64>      subbatch_targets;
+                    subbatch_outputs.reserve(current_subbatch_size);
+                    subbatch_targets.reserve(current_subbatch_size);
 
-                auto loss = mse(subbatch_outputs, subbatch_targets);
-                Graph::get()->backward();
+                    Graph::get()->copy_parameter_values(current_parameter_values);
 
-                double subbatch_contribution = static_cast<double>(current_subbatch_size)
-                                             / static_cast<double>(current_batch_size);
-                Parameters subbatch_gradients = Graph::get()->get_all_parameter_gradients();
-                batch_gradients.weighted_accumulate(subbatch_contribution, subbatch_gradients);
+                    for (size_t j = subbatch_start; j < subbatch_end; ++j) {
+                        size_t   idx    = indices[j];
+                        f64      y      = results[idx];
+                        Position pos    = positions[idx];
+                        auto     result = (evaluate_white_pov(pos) * K)->sigmoid();
+                        subbatch_outputs.push_back(result);
+                        subbatch_targets.push_back(y);
+                    }
 
-                Graph::get()->cleanup();
+                    auto loss = mse(subbatch_outputs, subbatch_targets);
+                    Graph::get()->backward();
+
+                    double subbatch_contribution = static_cast<double>(current_subbatch_size)
+                                                 / static_cast<double>(current_batch_size);
+                    Parameters subbatch_gradients = Graph::get()->get_all_parameter_gradients();
+                    Graph::get()->cleanup();
+
+                    std::lock_guard guard{mutex};
+                    batch_gradients.weighted_accumulate(subbatch_contribution, subbatch_gradients);
+                });
+            }
+
+            for (std::thread& t : threads) {
+                t.join();
             }
 
             optim.step(current_parameter_values, batch_gradients);
@@ -154,6 +168,9 @@ int main() {
         }
 
         std::cout << std::endl;  // Finish progress bar line
+
+        // Print current values
+        Graph::get()->copy_parameter_values(current_parameter_values);
 
         std::cout << "inline const PParam PAWN_MAT   = " << PAWN_MAT << ";" << std::endl;
         std::cout << "inline const PParam KNIGHT_MAT = " << KNIGHT_MAT << ";" << std::endl;
