@@ -326,7 +326,7 @@ Value Worker::search(
     }
 
     if (depth <= 0) {
-        return quiesce<IS_MAIN>(pos, ss, alpha, beta, ply);
+        return quiesce<IS_MAIN, PV_NODE>(pos, ss, alpha, beta, ply);
     }
 
     const bool ROOT_NODE = ply == 0;
@@ -425,7 +425,7 @@ Value Worker::search(
 
     // Razoring
     if (!PV_NODE && !is_in_check && depth <= 7 && ss->static_eval + 707 * depth < alpha) {
-        const Value razor_score = quiesce<IS_MAIN>(pos, ss, alpha, beta, ply);
+        const Value razor_score = quiesce<IS_MAIN, PV_NODE>(pos, ss, alpha, beta, ply);
         if (razor_score <= alpha) {
             return razor_score;
         }
@@ -616,7 +616,7 @@ Value Worker::search(
     return best_value;
 }
 
-template<bool IS_MAIN>
+template<bool IS_MAIN, bool PV_NODE>
 Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i32 ply) {
     ss->pv.clear();
 
@@ -649,7 +649,7 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
 
     // TT Probing
     auto tt_data = m_searcher.tt.probe(pos, ply);
-    if (tt_data
+    if (!PV_NODE && tt_data
         && (tt_data->bound == Bound::Exact
             || (tt_data->bound == Bound::Lower && tt_data->score >= beta)
             || (tt_data->bound == Bound::Upper && tt_data->score <= alpha))) {
@@ -700,7 +700,7 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
         repetition_info.push(pos_after.get_hash_key(), pos_after.is_reversible(m));
 
         // Get search value
-        Value value = -quiesce<IS_MAIN>(pos_after, ss + 1, -beta, -alpha, ply + 1);
+        Value value = -quiesce<IS_MAIN, PV_NODE>(pos_after, ss + 1, -beta, -alpha, ply + 1);
 
         // TODO: encapsulate this and any other future adjustment to do "on going back" into a proper function
         repetition_info.pop();
