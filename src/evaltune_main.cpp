@@ -147,7 +147,8 @@ int main() {
                         subbatch_targets.push_back(y);
                     }
 
-                    auto loss = mse(subbatch_outputs, subbatch_targets);
+                    auto subbatch_loss = mse<Reduction::Sum>(subbatch_outputs, subbatch_targets)
+                                       * Value::create(static_cast<f64>(1) / batch_size);
                     Graph::get().backward();
 
                     Parameters subbatch_gradients = Graph::get().get_all_parameter_gradients();
