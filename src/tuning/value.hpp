@@ -237,12 +237,12 @@ public:
         }
 
         f64 sum = 0.0;
-        f64 c     = 0.0; 
+        f64 c   = 0.0;
         for (auto& v : inputs) {
             f64 y = v->m_value - c;
             f64 t = sum + y;
             c     = (t - sum) - y;
-            sum = t;
+            sum   = t;
         }
 
         ValuePtr result = Value::create(sum);
