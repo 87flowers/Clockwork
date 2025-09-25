@@ -379,7 +379,9 @@ Value Worker::search(
         && (tt_data->bound == Bound::Exact
             || (tt_data->bound == Bound::Lower && tt_data->score >= beta)
             || (tt_data->bound == Bound::Upper && tt_data->score <= alpha))) {
-        return tt_data->score;
+        if (!is_theoretical_value(tt_data->score)) {
+            return tt_data->score;
+        }
     }
 
     bool  is_in_check = pos.is_in_check();
@@ -664,7 +666,9 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
         && (tt_data->bound == Bound::Exact
             || (tt_data->bound == Bound::Lower && tt_data->score >= beta)
             || (tt_data->bound == Bound::Upper && tt_data->score <= alpha))) {
-        return tt_data->score;
+        if (!is_theoretical_value(tt_data->score)) {
+            return tt_data->score;
+        }
     }
 
     bool  is_in_check = pos.is_in_check();
