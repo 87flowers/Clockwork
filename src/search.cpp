@@ -326,7 +326,7 @@ Value Worker::search(
     }
 
     alpha = std::max(alpha, mated_in(ply));
-    beta = std::min(beta, -mated_in(ply) + 1);
+    beta  = std::min(beta, -mated_in(ply) + 1);
     if (alpha >= beta) {
         return alpha;
     }
@@ -742,7 +742,7 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
 
     // Checkmate check
     if (is_in_check && moves_searched == 0) {
-        return mated_in(ply);
+        return -VALUE_WIN + 1;
     }
 
     // Store to the TT
