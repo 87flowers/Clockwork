@@ -326,7 +326,7 @@ Value Worker::search(
     }
 
     alpha = std::max(alpha, mated_in(ply));
-    beta = std::min(beta, -mated_in(ply) + 1);
+    beta  = std::min(beta, -mated_in(ply) + 1);
     if (alpha >= beta) {
         return alpha;
     }
@@ -405,7 +405,7 @@ Value Worker::search(
 
     // Reuse TT score as a better positional evaluation
     auto tt_adjusted_eval = ss->static_eval;
-    if (tt_data && tt_data->bound != Bound::None
+    if (tt_data && tt_data->bound != Bound::None && !is_theoretical_value(tt_data->score)
         && tt_data->bound != (tt_data->score > ss->static_eval ? Bound::Upper : Bound::Lower)) {
         tt_adjusted_eval = tt_data->score;
     }
