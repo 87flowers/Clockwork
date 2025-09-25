@@ -129,6 +129,22 @@ public:
         return m_major_key;
     }
 
+    template<PieceType... ptype>
+    [[nodiscard]] HashKey get_corr_key() const {
+        constexpr u8 bits = (0 | ... | (1 << static_cast<u8>(ptype)));
+        const v128 to_bits{std::array<u8, 16>{0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0, 0,
+                                              0, 0, 0, 0, 0, 0}};
+        const v256 bits_vec = v256::broadcast8(bits);
+        const v256 vecmask  = v256::eq8_vm(
+          v256::permute8(std::bit_cast<v256>(m_piece_list), to_bits) & bits_vec, v256::zero());
+        __m256i x = v256::andnot(vecmask, std::bit_cast<v256>(m_piece_list_sq)).raw;
+        x         = _mm256_aesenc_epi128(x, x);
+        x         = _mm256_mullo_epi64(x, _mm256_set1_epi64x(static_cast<i64>(0x94d049bb133111eb)));
+        x         = _mm256_aesenc_epi128(x, x);
+        auto y    = std::bit_cast<std::array<u64, 4>>(x);
+        return y[0] + y[1] + y[2] + y[3];
+    }
+
     [[nodiscard]] Square king_sq(Color color) const {
         return piece_list_sq(color)[PieceId{0}];
     }

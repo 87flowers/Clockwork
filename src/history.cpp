@@ -74,6 +74,9 @@ void History::update_correction_history(const Position& pos, i32 depth, i32 diff
     usize black_non_pawn_index =
       static_cast<usize>(black_non_pawn_key % CORRECTION_HISTORY_ENTRY_NB);
     usize major_index = static_cast<usize>(major_key % CORRECTION_HISTORY_ENTRY_NB);
+    usize kpr_index =
+      static_cast<usize>(pos.get_corr_key<PieceType::King, PieceType::Rook, PieceType::Pawn>()
+                         % CORRECTION_HISTORY_ENTRY_NB);
 
     i32 new_weight  = std::min(16, 1 + depth);
     i32 scaled_diff = diff * CORRECTION_HISTORY_GRAIN;
@@ -90,6 +93,7 @@ void History::update_correction_history(const Position& pos, i32 depth, i32 diff
     update_entry(m_non_pawn_corr_hist[0][side_index][white_non_pawn_index]);
     update_entry(m_non_pawn_corr_hist[1][side_index][black_non_pawn_index]);
     update_entry(m_major_corr_hist[side_index][major_index]);
+    update_entry(m_kpr_corr_hist[side_index][kpr_index]);
 }
 
 i32 History::get_correction(const Position& pos) {
@@ -104,6 +108,9 @@ i32 History::get_correction(const Position& pos) {
     usize black_non_pawn_index =
       static_cast<usize>(black_non_pawn_key % CORRECTION_HISTORY_ENTRY_NB);
     usize major_index = static_cast<usize>(major_key % CORRECTION_HISTORY_ENTRY_NB);
+    usize kpr_index =
+      static_cast<usize>(pos.get_corr_key<PieceType::King, PieceType::Rook, PieceType::Pawn>()
+                         % CORRECTION_HISTORY_ENTRY_NB);
 
     i32 correction = 0;
     correction += m_pawn_corr_hist[side_index][pawn_index] / CORRECTION_HISTORY_GRAIN;
@@ -112,6 +119,7 @@ i32 History::get_correction(const Position& pos) {
     correction +=
       m_non_pawn_corr_hist[1][side_index][black_non_pawn_index] / CORRECTION_HISTORY_GRAIN;
     correction += m_major_corr_hist[side_index][major_index] / CORRECTION_HISTORY_GRAIN;
+    correction += m_kpr_corr_hist[side_index][kpr_index] / CORRECTION_HISTORY_GRAIN;
 
     return correction;
 }
