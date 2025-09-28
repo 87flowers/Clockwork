@@ -84,7 +84,27 @@ struct PinInfo {
     Bitboard  pinned;
 };
 
-using PinInfos = std::array<PinInfo, 2>;
+struct PinInfos {
+public:
+    constexpr PinInfos(PinInfo white, PinInfo black) :
+        infos{white, black} {
+    }
+
+    const PinInfo& info(Color color) const {
+        return infos[static_cast<usize>(color)];
+    }
+
+    const Wordboard& mask(Color color) const {
+        return info(color).pin_mask;
+    }
+
+    Bitboard pinned(Color color) const {
+        return info(color).pinned;
+    }
+
+private:
+    std::array<PinInfo, 2> infos;
+};
 
 struct CreateSuperpieceMaskInfo {
     u16 padding1 = 0;  // must be zero
@@ -208,6 +228,12 @@ public:
 
     [[nodiscard]] usize mobility_of(Color color, PieceId id, Bitboard mask) const {
         return (attack_table(color).get_piece_mask_bitboard(id.to_piece_mask()) & mask).popcount();
+    }
+
+    [[nodiscard]] usize mobility_of(const PinInfos& pi, Color color, PieceId id, Bitboard m) const {
+        return ((attack_table(color) & pi.mask(color)).get_piece_mask_bitboard(id.to_piece_mask())
+                & m)
+          .popcount();
     }
 
     [[nodiscard]] Wordboard create_attack_table_superpiece_mask(Square                   sq,

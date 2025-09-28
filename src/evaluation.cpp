@@ -79,25 +79,25 @@ PScore evaluate_pawns(const Position& pos) {
 }
 
 template<Color color>
-PScore evaluate_pieces(const Position& pos) {
+PScore evaluate_pieces(const Position& pos, const PinInfos& pi) {
     constexpr Color opp  = ~color;
     PScore          eval = PSCORE_ZERO;
     Bitboard bb = pos.bitboard_for(color, PieceType::Pawn) | pos.attacked_by(opp, PieceType::Pawn);
     Bitboard opp_king_ring = king_ring_table[pos.king_sq(opp).raw];
     for (PieceId id : pos.get_piece_mask(color, PieceType::Knight)) {
-        eval += KNIGHT_MOBILITY[pos.mobility_of(color, id, ~bb)];
+        eval += KNIGHT_MOBILITY[pos.mobility_of(pi, color, id, ~bb)];
         eval += KNIGHT_KING_RING[pos.mobility_of(color, id, opp_king_ring)];
     }
     for (PieceId id : pos.get_piece_mask(color, PieceType::Bishop)) {
-        eval += BISHOP_MOBILITY[pos.mobility_of(color, id, ~bb)];
+        eval += BISHOP_MOBILITY[pos.mobility_of(pi, color, id, ~bb)];
         eval += BISHOP_KING_RING[pos.mobility_of(color, id, opp_king_ring)];
     }
     for (PieceId id : pos.get_piece_mask(color, PieceType::Rook)) {
-        eval += ROOK_MOBILITY[pos.mobility_of(color, id, ~bb)];
+        eval += ROOK_MOBILITY[pos.mobility_of(pi, color, id, ~bb)];
         eval += ROOK_KING_RING[pos.mobility_of(color, id, opp_king_ring)];
     }
     for (PieceId id : pos.get_piece_mask(color, PieceType::Queen)) {
-        eval += QUEEN_MOBILITY[pos.mobility_of(color, id, ~bb)];
+        eval += QUEEN_MOBILITY[pos.mobility_of(pi, color, id, ~bb)];
         eval += QUEEN_KING_RING[pos.mobility_of(color, id, opp_king_ring)];
     }
     eval += KING_MOBILITY[pos.mobility_of(color, PieceId::king(), ~bb)];
@@ -162,7 +162,7 @@ PScore evaluate_threats(const Position& pos) {
     return eval;
 }
 
-Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
+Score evaluate_white_pov(const Position& pos, const PinInfos& pi, const PsqtState& psqt_state) {
     const Color us    = pos.active_color();
     usize       phase = pos.piece_count(Color::White, PieceType::Knight)
                 + pos.piece_count(Color::Black, PieceType::Knight)
@@ -178,7 +178,7 @@ Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
     phase = std::min<usize>(phase, 24);
 
     PScore eval = psqt_state.score();
-    eval += evaluate_pieces<Color::White>(pos) - evaluate_pieces<Color::Black>(pos);
+    eval += evaluate_pieces<Color::White>(pos, pi) - evaluate_pieces<Color::Black>(pos, pi);
     eval += evaluate_pawns<Color::White>(pos) - evaluate_pawns<Color::Black>(pos);
     eval += evaluate_potential_checkers<Color::White>(pos)
           - evaluate_potential_checkers<Color::Black>(pos);
@@ -187,10 +187,10 @@ Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
     return eval->phase<24>(static_cast<i32>(phase));
 };
 
-Score evaluate_stm_pov(const Position& pos, const PsqtState& psqt_state) {
+Score evaluate_stm_pov(const Position& pos, const PinInfos& pi, const PsqtState& psqt_state) {
     const Color us = pos.active_color();
-    return (us == Color::White) ? evaluate_white_pov(pos, psqt_state)
-                                : -evaluate_white_pov(pos, psqt_state);
+    return (us == Color::White) ? evaluate_white_pov(pos, pi, psqt_state)
+                                : -evaluate_white_pov(pos, pi, psqt_state);
 }
 
 }  // namespace Clockwork
