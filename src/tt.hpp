@@ -12,12 +12,12 @@ enum Bound : u8 {
 };
 
 struct TTEntry {
-    u16   key16;
-    Move  move;
-    i16   score;
-    i16   eval;
-    u8    depth;
-    Bound bound;
+    u16   key16 = 0;
+    Move  move  = Move::none();
+    i16   score = 0;
+    i16   eval  = 0;
+    u8    depth = 0;
+    Bound bound = Bound::None;
 };
 
 static_assert(sizeof(TTEntry) == 10 * sizeof(u8));

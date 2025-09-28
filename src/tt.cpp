@@ -1,5 +1,12 @@
 #include "tt.hpp"
 
+#include <algorithm>
+#include <cstdlib>
+#include <optional>
+
+#include "common.hpp"
+#include "util/types.hpp"
+
 namespace Clockwork {
 
 static u16 shrink_key(HashKey key) {
@@ -78,12 +85,15 @@ void TT::store(
   const Position& pos, i32 ply, Value eval, Move move, Value score, Depth depth, Bound bound) {
     size_t idx   = mulhi64(pos.get_hash_key(), m_size);
     auto&  entry = m_entries[idx];
-    entry.key16  = shrink_key(pos.get_hash_key());
-    entry.move   = move;
-    entry.score  = score_to_tt(score, ply);
-    entry.eval   = static_cast<i16>(eval);
-    entry.depth  = static_cast<u8>(depth);
-    entry.bound  = bound;
+    if (depth == 0 && entry.depth > 0) {
+        return;
+    }
+    entry.key16 = shrink_key(pos.get_hash_key());
+    entry.move  = move;
+    entry.score = score_to_tt(score, ply);
+    entry.eval  = static_cast<i16>(eval);
+    entry.depth = static_cast<u8>(depth);
+    entry.bound = bound;
 }
 
 void TT::resize(size_t mb) {
@@ -100,5 +110,4 @@ void TT::resize(size_t mb) {
 void TT::clear() {
     std::fill(m_entries, m_entries + m_size, TTEntry{});
 }
-
 }
