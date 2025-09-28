@@ -94,7 +94,7 @@ int main() {
     ParameterCountInfo parameter_count          = Globals::get().get_parameter_counts();
     Parameters         current_parameter_values = Parameters::zeros(parameter_count);
 
-    CAdamW optim(parameter_count, 20, 0.9, 0.999, 1e-8, 0.0);
+    CAdamW optim(parameter_count, 50, 0.9, 0.999, 1e-8, 0.0);
 
     i32       epochs     = 1000;
     const f64 K          = 1.0 / 400;
@@ -284,7 +284,7 @@ int main() {
                   << std::endl;
 
         if (epoch > 5) {
-            optim.set_lr(optim.get_lr() * 0.93);
+            optim.set_lr(optim.get_lr() * 0.91);
         }
     }
 
