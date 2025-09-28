@@ -92,9 +92,9 @@ int main() {
     using namespace Clockwork::Autograd;
 
     ParameterCountInfo parameter_count          = Globals::get().get_parameter_counts();
-    Parameters         current_parameter_values = Graph::get().get_all_parameter_values();
+    Parameters         current_parameter_values = Parameters::zeros(parameter_count);
 
-    CAdamW optim(parameter_count, 10, 0.9, 0.999, 1e-8, 0.0);
+    CAdamW optim(parameter_count, 20, 0.9, 0.999, 1e-8, 0.0);
 
     i32       epochs     = 1000;
     const f64 K          = 1.0 / 400;
@@ -180,9 +180,6 @@ int main() {
         }
 
         std::cout << std::endl;  // Finish progress bar line
-
-        std::cout << "Average batch loss: " << total_batch_loss / static_cast<f64>(total_batches)
-                  << std::endl;
 
         // Print current values
         Graph::get().copy_parameter_values(current_parameter_values);
@@ -283,8 +280,11 @@ int main() {
         printPsqtArray("QUEEN_PSQT", QUEEN_PSQT);
         printPsqtArray("KING_PSQT", KING_PSQT);
 
+        std::cout << "// Average batch loss: " << total_batch_loss / static_cast<f64>(total_batches)
+                  << std::endl;
+
         if (epoch > 5) {
-            optim.set_lr(optim.get_lr() * 0.85);
+            optim.set_lr(optim.get_lr() * 0.93);
         }
     }
 
