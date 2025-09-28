@@ -97,7 +97,7 @@ int main() {
     const ParameterCountInfo parameter_count          = Globals::get().get_parameter_counts();
     Parameters               current_parameter_values = Graph::get().get_all_parameter_values();
 
-    AdamW optim(parameter_count, 10, 0.9, 0.999, 1e-8, 0.0);
+    CAdamW optim(parameter_count, 10, 0.9, 0.999, 1e-8, 0.0);
 
     const i32    epochs     = 1000;
     const f64    K          = 1.0 / 400;

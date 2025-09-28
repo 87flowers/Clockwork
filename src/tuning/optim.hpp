@@ -190,4 +190,170 @@ public:
     }
 };
 
+class CAdamW {
+private:
+    ParameterCountInfo m_counts;
+
+    f64       m_lr;
+    f64       m_beta1;
+    f64       m_beta2;
+    f64       m_eps;
+    f64       m_weight_decay;
+    long long m_t;
+
+    std::vector<f64>  m_m;
+    std::vector<f64>  m_v;
+    std::vector<f128> m_pair_m;
+    std::vector<f128> m_pair_v;
+
+public:
+    explicit CAdamW(ParameterCountInfo counts,
+                    f64                lr           = 1e-3,
+                    f64                beta1        = 0.9,
+                    f64                beta2        = 0.999,
+                    f64                eps          = 1e-8,
+                    f64                weight_decay = 0.01) :
+        m_counts(counts),
+        m_lr(lr),
+        m_beta1(beta1),
+        m_beta2(beta2),
+        m_eps(eps),
+        m_weight_decay(weight_decay),
+        m_t(0) {
+        m_m.resize(m_counts.parameter_count, 0.0);
+        m_v.resize(m_counts.parameter_count, 0.0);
+
+        m_pair_m.resize(m_counts.pair_parameter_count, f128::zero());
+        m_pair_v.resize(m_counts.pair_parameter_count, f128::zero());
+    }
+
+    void step(Parameters& values, const Parameters& gradients) {
+        m_t += 1;
+
+        const f64 b1t      = std::pow(m_beta1, static_cast<f64>(m_t));
+        const f64 b2t      = std::pow(m_beta2, static_cast<f64>(m_t));
+        const f64 inv1mb1t = 1.0 / (1.0 - b1t);
+        const f64 inv1mb2t = 1.0 / (1.0 - b2t);
+
+        std::vector<f64>                 value_adam_updates;
+        std::vector<bool>                value_alignment_mask;
+        std::vector<std::array<f64, 2>>  pair_adam_updates;
+        std::vector<std::array<bool, 2>> pair_alignment_mask;
+        i64                              param_count   = 0;
+        i64                              alignment_nnz = 0;
+
+        value_adam_updates.resize(m_counts.parameter_count);
+        value_alignment_mask.resize(m_counts.parameter_count);
+
+        for (size_t i = 0; i < m_counts.parameter_count; ++i) {
+            if (Globals::get().is_parameter_constant(i)) {
+                continue;
+            }
+
+            auto& g = gradients.parameters[i];
+
+            m_m[i] = m_beta1 * m_m[i] + (1.0 - m_beta1) * g;
+
+            m_v[i] = m_beta2 * m_v[i] + (1.0 - m_beta2) * g * g;
+
+            const f64 m_hat = m_m[i] * inv1mb1t;
+            const f64 v_hat = m_v[i] * inv1mb2t;
+
+            value_adam_updates[i] = m_lr * m_hat / (std::sqrt(v_hat) + m_eps);
+
+            bool alignment          = value_adam_updates[i] * g > 0;
+            value_alignment_mask[i] = alignment;
+            alignment_nnz += alignment;
+            param_count += 1;
+        }
+
+        pair_adam_updates.resize(m_counts.pair_parameter_count);
+        pair_alignment_mask.resize(m_counts.pair_parameter_count);
+
+        for (size_t i = 0; i < m_counts.pair_parameter_count; ++i) {
+            if (Globals::get().is_pair_parameter_constant(i)) {
+                continue;
+            }
+
+            auto& g = gradients.pair_parameters[i];
+            auto& m = m_pair_m[i];
+            auto& v = m_pair_v[i];
+
+            const f128 g2 = f128::mul(g, g);
+
+            const f128 m_scaled = f128::mul_scalar(m, m_beta1);
+            const f128 g_scaled = f128::mul_scalar(g, (1.0 - m_beta1));
+            m                   = f128::add(m_scaled, g_scaled);
+
+            const f128 v_scaled  = f128::mul_scalar(v, m_beta2);
+            const f128 g2_scaled = f128::mul_scalar(g2, (1.0 - m_beta2));
+            v                    = f128::add(v_scaled, g2_scaled);
+
+            const f128 m_hat = f128::mul_scalar(m, inv1mb1t);
+            const f128 v_hat = f128::mul_scalar(v, inv1mb2t);
+
+            const f64 adam_upd_f = m_lr * m_hat.first() / (std::sqrt(v_hat.first()) + m_eps);
+            const f64 adam_upd_s = m_lr * m_hat.second() / (std::sqrt(v_hat.second()) + m_eps);
+
+            pair_adam_updates[i] = {adam_upd_f, adam_upd_s};
+
+            bool align_f = adam_upd_f * g.first() > 0;
+            bool align_s = adam_upd_s * g.second() > 0;
+
+            pair_alignment_mask[i] = {align_f, align_s};
+            alignment_nnz += align_f + align_s;
+            param_count += 2;
+        }
+
+        f64 cautiousness_rescale =
+          static_cast<f64>(param_count) / static_cast<f64>(alignment_nnz + 1);
+
+        for (size_t i = 0; i < m_counts.parameter_count; ++i) {
+            if (Globals::get().is_parameter_constant(i)) {
+                continue;
+            }
+
+            auto& p = values.parameters[i];
+
+            bool align = value_alignment_mask[i];
+
+            const f64 adam_upd            = align * cautiousness_rescale * value_adam_updates[i];
+            const f64 weight_decay_update = m_lr * m_weight_decay * p;
+
+            const f64 total_update = -(adam_upd + weight_decay_update);
+
+            p += total_update;
+        }
+
+        for (size_t i = 0; i < m_counts.pair_parameter_count; ++i) {
+            if (Globals::get().is_pair_parameter_constant(i)) {
+                continue;
+            }
+
+            auto& p = values.pair_parameters[i];
+
+            bool align_f = pair_alignment_mask[i][0];
+            bool align_s = pair_alignment_mask[i][1];
+
+            const f64 adam_upd_f = align_f * cautiousness_rescale * pair_adam_updates[i][0];
+            const f64 adam_upd_s = align_s * cautiousness_rescale * pair_adam_updates[i][1];
+
+            const f64 decay_upd_f = m_lr * m_weight_decay * p.first();
+            const f64 decay_upd_s = m_lr * m_weight_decay * p.second();
+
+            const f64 total_upd_f = -(adam_upd_f + decay_upd_f);
+            const f64 total_upd_s = -(adam_upd_s + decay_upd_s);
+
+            p = f128::add(p, f128::make(total_upd_f, total_upd_s));
+        }
+    }
+
+    void set_lr(f64 lr) {
+        m_lr = lr;
+    }
+    f64 get_lr() const {
+        return m_lr;
+    }
+};
+
 }  // namespace Clockwork::Autograd
