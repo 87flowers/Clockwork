@@ -112,6 +112,8 @@ int main() {
 
         size_t total_batches = (positions.size() + batch_size - 1) / batch_size;
 
+        f64 total_batch_loss = 0.0;
+
         for (size_t batch_idx = 0, batch_start = 0; batch_start < positions.size();
              batch_start += batch_size, ++batch_idx) {
             size_t batch_end          = std::min(batch_start + batch_size, positions.size());
@@ -119,6 +121,7 @@ int main() {
             size_t subbatch_size      = (current_batch_size + thread_count - 1) / thread_count;
 
             Parameters batch_gradients = Parameters::zeros(parameter_count);
+            f64        batch_loss      = 0.0;
 
             std::mutex               mutex;
             std::vector<std::thread> threads;
@@ -157,6 +160,7 @@ int main() {
                     {
                         std::lock_guard guard{mutex};
                         batch_gradients.accumulate(subbatch_gradients);
+                        batch_loss += subbatch_loss->get_value();
                     }
 
                     Graph::get().cleanup();
@@ -171,9 +175,14 @@ int main() {
 
             // Print batch progress bar
             print_progress(batch_idx + 1, total_batches);
+
+            total_batch_loss += batch_loss;
         }
 
         std::cout << std::endl;  // Finish progress bar line
+
+        std::cout << "Average batch loss: " << total_batch_loss / static_cast<f64>(total_batches)
+                  << std::endl;
 
         // Print current values
         Graph::get().copy_parameter_values(current_parameter_values);
