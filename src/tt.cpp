@@ -1,4 +1,5 @@
 #include "tt.hpp"
+#include <atomic>
 
 namespace Clockwork {
 
@@ -55,25 +56,27 @@ Value score_from_tt(i16 ttScore, i32 ply) {
 }
 
 TT::TT(size_t mb) :
-    m_entries{nullptr},
+    m_clusters{nullptr},
     m_size{0} {
     resize(mb);
 }
 
 TT::~TT() {
-    aligned_free(m_entries);
+    aligned_free(m_clusters);
 }
 
 std::optional<TTData> TT::probe(const Position& pos, i32 ply) const {
-    size_t      idx   = mulhi64(pos.get_hash_key(), m_size);
-    const auto& entry = m_entries[idx];
-    if (entry.key16 == shrink_key(pos.get_hash_key())) {
-        TTData data = {.eval       = entry.eval,
-                       .move       = entry.move,
-                       .score      = score_from_tt(entry.score, ply),
-                       .depth      = static_cast<Depth>(entry.depth),
-                       .ttpv_bound = entry.ttpv_bound};
-        return {data};
+    size_t idx     = mulhi64(pos.get_hash_key(), m_size);
+    auto&  cluster = m_clusters[idx];
+    for (const auto& entry : cluster.entries) {
+        if (entry.key16 == shrink_key(pos.get_hash_key())) {
+            TTData data = {.eval       = entry.eval,
+                           .move       = entry.move,
+                           .score      = score_from_tt(entry.score, ply),
+                           .depth      = static_cast<Depth>(entry.depth),
+                           .ttpv_bound = entry.ttpv_bound};
+            return {data};
+        }
     }
     return {};
 }
@@ -86,8 +89,20 @@ void TT::store(const Position& pos,
                Depth           depth,
                bool            ttpv,
                Bound           bound) {
-    size_t idx       = mulhi64(pos.get_hash_key(), m_size);
-    auto&  entry     = m_entries[idx];
+    size_t idx     = mulhi64(pos.get_hash_key(), m_size);
+    auto&  cluster = m_clusters[idx];
+
+    auto& entry = [&]() -> TTEntry& {
+        for (auto& entry : cluster.entries) {
+            if (entry.key16 == shrink_key(pos.get_hash_key())) {
+                return entry;
+            }
+        }
+
+        std::atomic_ref current_index{cluster.current_index};
+        return cluster.entries[current_index.fetch_add(1) % TT_CLUSTER_SIZE];
+    }();
+
     entry.key16      = shrink_key(pos.get_hash_key());
     entry.move       = move;
     entry.score      = score_to_tt(score, ply);
@@ -97,18 +112,18 @@ void TT::store(const Position& pos,
 }
 
 void TT::resize(size_t mb) {
-    aligned_free(m_entries);
+    aligned_free(m_clusters);
 
-    size_t bytes   = mb * 1024 * 1024;
-    size_t entries = bytes / sizeof(TTEntry);
+    size_t bytes    = mb * 1024 * 1024;
+    size_t clusters = bytes / sizeof(TTCluster);
 
-    m_size    = entries;
-    m_entries = static_cast<TTEntry*>(aligned_alloc(TT_ALIGNMENT, bytes));
+    m_size     = clusters;
+    m_clusters = static_cast<TTCluster*>(aligned_alloc(TT_ALIGNMENT, bytes));
     clear();
 }
 
 void TT::clear() {
-    std::fill(m_entries, m_entries + m_size, TTEntry{});
+    std::fill(m_clusters, m_clusters + m_size, TTCluster{});
 }
 
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "position.hpp"
+#include <array>
 
 namespace Clockwork {
 
@@ -21,6 +22,15 @@ struct TTEntry {
 };
 
 static_assert(sizeof(TTEntry) == 10 * sizeof(u8));
+
+constexpr usize TT_CLUSTER_SIZE = 3;
+
+struct TTCluster {
+    std::array<TTEntry, TT_CLUSTER_SIZE> entries;
+    u16                                  current_index;
+};
+
+static_assert(sizeof(TTCluster) == 32 * sizeof(u8));
 
 struct TTData {
     Value eval;
@@ -58,8 +68,8 @@ public:
     void                  clear();
 
 private:
-    TTEntry* m_entries;
-    size_t   m_size;
+    TTCluster* m_clusters;
+    size_t     m_size;
 };
 
 }
