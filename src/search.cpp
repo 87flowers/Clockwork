@@ -468,12 +468,23 @@ Value Worker::search(
     }
 
     MovePicker moves{pos, m_td.history, tt_data ? tt_data->move : Move::none(), ply, ss};
-    Move       best_move    = Move::none();
-    Value      best_value   = -VALUE_INF;
-    i32        moves_played = 0;
-    MoveList   quiets_played;
-    MoveList   noisies_played;
-    i32        alpha_raises = 0;
+
+    // TT Probcut
+    {
+        Value probcut_beta = beta + 600;
+        if (!ttpv && !excluded && !is_in_check && tt_data && std::abs(tt_data->score) < VALUE_WIN
+            && tt_data->score >= probcut_beta && tt_data->depth >= depth - 4
+            && moves.is_legal(tt_data->move)) {
+            return probcut_beta;
+        }
+    }
+
+    Move     best_move    = Move::none();
+    Value    best_value   = -VALUE_INF;
+    i32      moves_played = 0;
+    MoveList quiets_played;
+    MoveList noisies_played;
+    i32      alpha_raises = 0;
 
     // Clear child's killer move.
     (ss + 1)->killer = Move::none();
@@ -544,7 +555,7 @@ Value Worker::search(
 
             // Negative Extensions
             else if (tt_data->score >= beta) {
-                extension = -1 - PV_NODE;                
+                extension = -1 - PV_NODE;
             }
         }
 
