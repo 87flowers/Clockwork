@@ -392,8 +392,13 @@ Value Worker::search(
         return evaluate(pos);
     }
 
-    auto tt_data = excluded ? std::nullopt : m_searcher.tt.probe(pos, ply);
-    bool ttpv    = PV_NODE;
+    PinInfo pin_info = pos.calc_pin_info();
+    auto    tt_data  = excluded ? std::nullopt : m_searcher.tt.probe(pos, ply);
+    bool    ttpv     = PV_NODE;
+
+    if (tt_data && !pin_info.is_legal(pos, tt_data->move)) {
+        tt_data = std::nullopt;
+    }
 
     if (!PV_NODE && tt_data) {
         if (tt_data->depth >= depth
@@ -467,7 +472,6 @@ Value Worker::search(
         }
     }
 
-    PinInfo    pin_info = pos.calc_pin_info();
     MovePicker moves{pos, pin_info, m_td.history, tt_data ? tt_data->move : Move::none(), ply, ss};
     Move       best_move    = Move::none();
     Value      best_value   = -VALUE_INF;
@@ -545,7 +549,7 @@ Value Worker::search(
 
             // Negative Extensions
             else if (tt_data->score >= beta) {
-                extension = -1 - PV_NODE;                
+                extension = -1 - PV_NODE;
             }
         }
 
