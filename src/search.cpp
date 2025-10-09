@@ -471,11 +471,12 @@ Value Worker::search(
 
     // TT Probcut
     {
-        Value probcut_beta = beta + 600;
+        Value probcut_beta = beta + 400;
         if (!ttpv && !excluded && !is_in_check && tt_data && std::abs(tt_data->score) < VALUE_WIN
-            && tt_data->score >= probcut_beta && tt_data->depth >= depth - 4
+            && tt_data->score >= probcut_beta && (tt_data->bound() & Bound::Lower)
+            && tt_data->depth >= depth - 4 && tt_data->move != Move::none()
             && moves.is_legal(tt_data->move)) {
-            return probcut_beta;
+            return tt_data->score;
         }
     }
 
