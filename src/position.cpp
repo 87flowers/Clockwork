@@ -8,12 +8,17 @@
 #include "board.hpp"
 #include "common.hpp"
 #include "geometry.hpp"
+#include "movegen.hpp"
 #include "psqt_state.hpp"
 #include "util/parse.hpp"
 #include "util/types.hpp"
 #include "zobrist.hpp"
 
 namespace Clockwork {
+
+bool PinInfo::is_legal(const Position& pos, Move m) const {
+    return MoveGen{pos, *this}.is_legal(m);
+}
 
 void Position::incrementally_remove_piece(bool         color,
                                           PieceId      id,

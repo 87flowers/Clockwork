@@ -14,6 +14,7 @@
 
 namespace Clockwork {
 
+struct Position;
 struct PsqtState;
 struct PsqtUpdates;
 
@@ -80,6 +81,8 @@ struct RookInfo {
 };
 
 struct PinInfo {
+    [[nodiscard]] bool is_legal(const Position& pos, Move m) const;
+
     Wordboard pin_mask;
     Bitboard  pinned;
 };
