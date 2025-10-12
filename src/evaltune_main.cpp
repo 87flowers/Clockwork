@@ -31,9 +31,10 @@ int main() {
 
     // List of files to load
     const std::vector<std::string> fenFiles = {
-      "data/dfrcv1/dfrc-1m.txt",  
-      "data/dfrcv0/v0.txt", 
-      "data/v2.2/filtered_data.txt",  "data/v2.1/filtered_data.txt",
+      "data/dfrcv1/dfrc-1m.txt",
+      "data/dfrcv0/v0.txt",
+      "data/v2.2/filtered_data.txt",
+      "data/v2.1/filtered_data.txt",
     };
 
     // Number of threads to use, default to half available
@@ -218,6 +219,13 @@ int main() {
 
         std::cout << "inline const PParam POTENTIAL_CHECKER_VAL = " << POTENTIAL_CHECKER_VAL << ";"
                   << std::endl;
+        std::cout << std::endl;
+
+        std::cout << "inline const PParam SAFE_SPACE_VAL   = " << SAFE_SPACE_VAL << ";"
+                  << std::endl;
+        std::cout << "inline const PParam DANGER_SPACE_VAL = " << DANGER_SPACE_VAL << ";"
+                  << std::endl;
+        std::cout << "inline const PParam OWN_SPACE_VAL    = " << OWN_SPACE_VAL << ";" << std::endl;
         std::cout << std::endl;
 
         auto print_table = [](const std::string& name, const auto& table) {

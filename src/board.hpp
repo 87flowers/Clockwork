@@ -212,6 +212,12 @@ struct Byteboard {
         return Bitboard{v512::eq8(to_vec() & v512::broadcast8(0xF0), v512::broadcast8(p.raw))};
     }
 
+    [[nodiscard]] Bitboard colorless_bitboard_for(PieceType ptype) const {
+        u8 raw = static_cast<u8>(static_cast<i32>(ptype) << Place::PTYPE_SHIFT);
+        return Bitboard{
+          v512::eq8(to_vec() & v512::broadcast8(Place::PTYPE_MASK), v512::broadcast8(raw))};
+    }
+
     constexpr Place& operator[](Square sq) {
         return mailbox[sq.raw];
     }

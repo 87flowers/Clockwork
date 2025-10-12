@@ -104,11 +104,12 @@ PScore evaluate_pawns(const Position& pos) {
 
 template<Color color>
 PScore evaluate_pieces(const Position& pos) {
-    constexpr Color opp  = ~color;
-    PScore          eval = PSCORE_ZERO;
-    Bitboard own_pawns = pos.bitboard_for(color, PieceType::Pawn);
-    Bitboard blocked_pawns = own_pawns & pos.board().get_occupied_bitboard().shift_relative(color, Direction::South);
-    Bitboard bb = own_pawns | pos.attacked_by(opp, PieceType::Pawn);
+    constexpr Color opp       = ~color;
+    PScore          eval      = PSCORE_ZERO;
+    Bitboard        own_pawns = pos.bitboard_for(color, PieceType::Pawn);
+    Bitboard        blocked_pawns =
+      own_pawns & pos.board().get_occupied_bitboard().shift_relative(color, Direction::South);
+    Bitboard bb            = own_pawns | pos.attacked_by(opp, PieceType::Pawn);
     Bitboard opp_king_ring = king_ring_table[pos.king_sq(opp).raw];
     for (PieceId id : pos.get_piece_mask(color, PieceType::Knight)) {
         eval += KNIGHT_MOBILITY[pos.mobility_of(color, id, ~bb)];
@@ -118,8 +119,10 @@ PScore evaluate_pieces(const Position& pos) {
         eval += BISHOP_MOBILITY[pos.mobility_of(color, id, ~bb)];
         eval += BISHOP_KING_RING[pos.mobility_of(color, id, opp_king_ring)];
         Square sq = pos.piece_list_sq(color)[id];
-        eval += BISHOP_PAWNS[
-            std::min(static_cast<usize>(8),(own_pawns & Bitboard::squares_of_color(sq.color())).popcount()) // Weird non standard positions which can have more than 8 pawns
+        eval += BISHOP_PAWNS[std::min(
+                  static_cast<usize>(8),
+                  (own_pawns & Bitboard::squares_of_color(sq.color()))
+                    .popcount())  // Weird non standard positions which can have more than 8 pawns
         ] * (1 + (blocked_pawns & Bitboard::central_files()).popcount());
     }
     for (PieceId id : pos.get_piece_mask(color, PieceType::Rook)) {
@@ -137,6 +140,25 @@ PScore evaluate_pieces(const Position& pos) {
     }
 
     return eval;
+}
+
+template<Color color>
+PScore evaluate_space(const Position& pos) {
+    constexpr Color opp = ~color;
+
+    Bitboard danger = pos.attacked_by(opp, PieceType::Pawn);
+    Bitboard pawns  = pos.board().colorless_bitboard_for(PieceType::Pawn);
+    Bitboard own    = pos.board().get_color_bitboard(color);
+
+    Bitboard area = Bitboard{color == Color::White ? 0x000000003c3c3c00 : 0x003c3c3c00000000};
+
+    Bitboard own_area  = own & area & ~danger;
+    Bitboard safe_area = area & pos.attack_table(color).get_attacked_bitboard()
+                       & ~pos.attack_table(opp).get_attacked_bitboard();
+    Bitboard danger_area = area & ~pawns & danger;
+
+    return SAFE_SPACE_VAL * safe_area.popcount() + DANGER_SPACE_VAL * danger_area.popcount()
+         + OWN_SPACE_VAL * own_area.popcount();
 }
 
 template<Color color>
@@ -210,6 +232,7 @@ Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
     PScore eval = psqt_state.score();
     eval += evaluate_pieces<Color::White>(pos) - evaluate_pieces<Color::Black>(pos);
     eval += evaluate_pawns<Color::White>(pos) - evaluate_pawns<Color::Black>(pos);
+    eval += evaluate_space<Color::White>(pos) - evaluate_space<Color::Black>(pos);
     eval += evaluate_potential_checkers<Color::White>(pos)
           - evaluate_potential_checkers<Color::Black>(pos);
     eval += evaluate_threats<Color::White>(pos) - evaluate_threats<Color::Black>(pos);
