@@ -219,11 +219,11 @@ public:
 
     [[nodiscard]] bool is_kp_endgame() const {
         for (Color color : {Color::White, Color::Black}) {
-            if (!(piece_count(color) == 1 + piece_count(color, PieceType::Pawn))) {
-                return false;
+            if (piece_count(color) == 1 + piece_count(color, PieceType::Pawn)) {
+                return true;
             }
         }
-        return true;
+        return false;
     }
 
     [[nodiscard]] bool is_insufficient_material() const {
