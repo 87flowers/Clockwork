@@ -433,42 +433,45 @@ Value Worker::search(
         depth--;
     }
 
-    // Reuse TT score as a better positional evaluation
-    auto tt_adjusted_eval = ss->static_eval;
-    if (tt_data && tt_data->bound() != Bound::None && !is_mate_score(tt_data->score)
-        && tt_data->bound() != (tt_data->score > ss->static_eval ? Bound::Upper : Bound::Lower)) {
-        tt_adjusted_eval = tt_data->score;
-    }
-
-    if (!PV_NODE && !is_in_check && depth <= tuned::rfp_depth && !excluded
-        && tt_adjusted_eval >= beta + tuned::rfp_margin * depth) {
-        return tt_adjusted_eval;
-    }
-
-    if (!PV_NODE && !is_in_check && !pos.is_kp_endgame() && depth >= tuned::nmp_depth && !excluded
-        && tt_adjusted_eval >= beta + 30 && !is_being_mated_score(beta)) {
-        int R =
-          tuned::nmp_base_r + depth / 4 + std::min(3, (tt_adjusted_eval - beta) / 400) + improving;
-        Position pos_after = pos.null_move();
-
-        repetition_info.push(pos_after.get_hash_key(), true);
-
-        Value value = -search<IS_MAIN, false>(pos_after, ss + 1, -beta, -beta + 1, depth - R,
-                                              ply + 1, !cutnode);
-
-        repetition_info.pop();
-
-        if (value >= beta) {
-            return is_mate_score(value) ? beta : value;
+    // Pruning & Razoring
+    if (!PV_NODE && !is_in_check && !excluded && !is_being_mated_score(beta)) {
+        // Reuse TT score as a better positional evaluation
+        auto tt_adjusted_eval = ss->static_eval;
+        if (tt_data && tt_data->bound() != Bound::None && !is_mate_score(tt_data->score)
+            && tt_data->bound()
+                 != (tt_data->score > ss->static_eval ? Bound::Upper : Bound::Lower)) {
+            tt_adjusted_eval = tt_data->score;
         }
-    }
 
-    // Razoring
-    if (!PV_NODE && !excluded && !is_in_check && depth <= 7
-        && ss->static_eval + 707 * depth < alpha) {
-        const Value razor_score = quiesce<IS_MAIN>(pos, ss, alpha, beta, ply);
-        if (razor_score <= alpha) {
-            return razor_score;
+        // Reverse Futility Pruning
+        if (depth <= tuned::rfp_depth && tt_adjusted_eval >= beta + tuned::rfp_margin * depth) {
+            return tt_adjusted_eval;
+        }
+
+        // Null Move Pruning
+        if (!pos.is_kp_endgame() && depth >= tuned::nmp_depth && tt_adjusted_eval >= beta + 30) {
+            int R = tuned::nmp_base_r + depth / 4 + std::min(3, (tt_adjusted_eval - beta) / 400)
+                  + improving;
+            Position pos_after = pos.null_move();
+
+            repetition_info.push(pos_after.get_hash_key(), true);
+
+            Value value = -search<IS_MAIN, false>(pos_after, ss + 1, -beta, -beta + 1, depth - R,
+                                                  ply + 1, !cutnode);
+
+            repetition_info.pop();
+
+            if (value >= beta) {
+                return is_mate_score(value) ? beta : value;
+            }
+        }
+
+        // Razoring
+        if (depth <= 7 && ss->static_eval + 707 * depth < alpha) {
+            const Value razor_score = quiesce<IS_MAIN>(pos, ss, alpha, beta, ply);
+            if (razor_score <= alpha) {
+                return razor_score;
+            }
         }
     }
 
