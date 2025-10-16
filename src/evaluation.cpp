@@ -189,12 +189,14 @@ PScore evaluate_threats(const Position& pos) {
     };
 
     Bitboard knight_attacks = pos.attacked_by(color, PieceType::Knight);
+    eval_piece_threats(knight_attacks, PieceType::Pawn, KNIGHT_THREAT_PAWN);
     eval_piece_threats(knight_attacks, PieceType::Knight, KNIGHT_THREAT_KNIGHT);
     eval_piece_threats(knight_attacks, PieceType::Bishop, KNIGHT_THREAT_BISHOP);
     eval_piece_threats(knight_attacks, PieceType::Rook, KNIGHT_THREAT_ROOK);
     eval_piece_threats(knight_attacks, PieceType::Queen, KNIGHT_THREAT_QUEEN);
 
     Bitboard bishop_attacks = pos.attacked_by(color, PieceType::Bishop);
+    eval_piece_threats(bishop_attacks, PieceType::Pawn, BISHOP_THREAT_PAWN);
     eval_piece_threats(bishop_attacks, PieceType::Knight, BISHOP_THREAT_KNIGHT);
     eval_piece_threats(bishop_attacks, PieceType::Bishop, BISHOP_THREAT_BISHOP);
     eval_piece_threats(bishop_attacks, PieceType::Rook, BISHOP_THREAT_ROOK);

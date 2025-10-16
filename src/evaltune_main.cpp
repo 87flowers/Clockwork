@@ -31,9 +31,10 @@ int main() {
 
     // List of files to load
     const std::vector<std::string> fenFiles = {
-      "data/dfrcv1/dfrc-1m.txt",  
-      "data/dfrcv0/v0.txt", 
-      "data/v2.2/filtered_data.txt",  "data/v2.1/filtered_data.txt",
+      "data/dfrcv1/dfrc-1m.txt",
+      "data/dfrcv0/v0.txt",
+      "data/v2.2/filtered_data.txt",
+      "data/v2.1/filtered_data.txt",
     };
 
     // Number of threads to use, default to half available
@@ -264,20 +265,18 @@ int main() {
                   << std::endl;
         std::cout << std::endl;
 
-        std::cout << "inline const PParam KNIGHT_THREAT_BISHOP = " << KNIGHT_THREAT_BISHOP << ";"
-                  << std::endl;
-        std::cout << "inline const PParam KNIGHT_THREAT_ROOK   = " << KNIGHT_THREAT_ROOK << ";"
-                  << std::endl;
-        std::cout << "inline const PParam KNIGHT_THREAT_QUEEN  = " << KNIGHT_THREAT_QUEEN << ";"
-                  << std::endl;
+        print_table("KNIGHT_THREAT_PAWN", KNIGHT_THREAT_PAWN);
+        print_table("KNIGHT_THREAT_KNIGHT", KNIGHT_THREAT_KNIGHT);
+        print_table("KNIGHT_THREAT_BISHOP", KNIGHT_THREAT_BISHOP);
+        print_table("KNIGHT_THREAT_ROOK", KNIGHT_THREAT_ROOK);
+        print_table("KNIGHT_THREAT_QUEEN", KNIGHT_THREAT_QUEEN);
         std::cout << std::endl;
 
-        std::cout << "inline const PParam BISHOP_THREAT_KNIGHT = " << BISHOP_THREAT_KNIGHT << ";"
-                  << std::endl;
-        std::cout << "inline const PParam BISHOP_THREAT_ROOK   = " << BISHOP_THREAT_ROOK << ";"
-                  << std::endl;
-        std::cout << "inline const PParam BISHOP_THREAT_QUEEN  = " << BISHOP_THREAT_QUEEN << ";"
-                  << std::endl;
+        print_table("BISHOP_THREAT_PAWN", BISHOP_THREAT_PAWN);
+        print_table("BISHOP_THREAT_KNIGHT", BISHOP_THREAT_KNIGHT);
+        print_table("BISHOP_THREAT_BISHOP", BISHOP_THREAT_BISHOP);
+        print_table("BISHOP_THREAT_ROOK", BISHOP_THREAT_ROOK);
+        print_table("BISHOP_THREAT_QUEEN", BISHOP_THREAT_QUEEN);
         std::cout << std::endl;
 
         print_table("BISHOP_PAWNS", BISHOP_PAWNS);
