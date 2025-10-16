@@ -211,7 +211,7 @@ void Worker::start_searching() {
 template<bool IS_MAIN>
 Move Worker::iterative_deepening(const Position& root_position) {
     constexpr usize                             SS_PADDING = 2;
-    std::array<Stack, MAX_PLY + SS_PADDING + 1> ss;
+    std::array<Stack, MAX_PLY + SS_PADDING + 3> ss;
 
     Depth last_search_depth = 0;
     Depth last_seldepth     = 0;
@@ -453,8 +453,9 @@ Value Worker::search(
 
         repetition_info.push(pos_after.get_hash_key(), true);
 
-        Value value = -search<IS_MAIN, false>(pos_after, ss + 1, -beta, -beta + 1, depth - R,
-                                              ply + 1, !cutnode);
+        (ss + 2)->killer = Move::none();
+        Value value      = -search<IS_MAIN, false>(pos_after, ss + 2, -beta, -beta + 1, depth - R,
+                                                   ply + 1, !cutnode);
 
         repetition_info.pop();
 
