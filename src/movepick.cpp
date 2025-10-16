@@ -18,12 +18,21 @@ void MovePicker::skip_quiets() {
         m_stage         = Stage::EmitBadNoisy;
     }
 }
+
 Move MovePicker::next() {
     switch (m_stage) {
     case Stage::EmitTTMove:
-        m_stage = Stage::GenerateMoves;
+        m_stage = Stage::EmitThreatMove;
         if (m_tt_move != Move::none() && m_movegen.is_legal(m_tt_move)) {
             return m_tt_move;
+        }
+
+        [[fallthrough]];
+    case Stage::EmitThreatMove:
+        m_stage = Stage::GenerateMoves;
+        if (m_threat_move != m_tt_move && m_threat_move != Move::none()
+            && m_movegen.is_legal(m_threat_move)) {
+            return m_threat_move;
         }
 
         [[fallthrough]];
@@ -44,7 +53,7 @@ Move MovePicker::next() {
         while (m_current_index < m_noisy.size()) {
             auto [curr, score] = pick_next(m_noisy);
             // Check see
-            if (curr != m_tt_move) {
+            if (!is_early_refutation(curr)) {
                 if (SEE::see(m_pos, curr, -score / tuned::movepicker_see_capthist_divisor)) {
                     return curr;
                 } else {
@@ -65,7 +74,8 @@ Move MovePicker::next() {
 
     case Stage::EmitKiller:
         m_stage = Stage::ScoreQuiet;
-        if (m_tt_move != m_killer && m_killer != Move::none() && m_movegen.is_legal(m_killer)) {
+        if (!is_early_refutation(m_killer) && m_killer != Move::none()
+            && m_movegen.is_legal(m_killer)) {
             return m_killer;
         }
 
@@ -81,7 +91,7 @@ Move MovePicker::next() {
     case Stage::EmitQuiet:
         while (m_current_index < m_quiet.size()) {
             auto [curr, score] = pick_next(m_quiet);
-            if (curr != m_tt_move && curr != m_killer) {
+            if (!is_refutation(curr)) {
                 return curr;
             }
         }
@@ -95,7 +105,7 @@ emit_bad_noisy:
     case Stage::EmitBadNoisy:
         while (m_current_index < m_bad_noisy.size()) {
             Move curr = m_bad_noisy[m_current_index++];
-            if (curr != m_tt_move && curr != m_killer) {
+            if (!is_refutation(curr)) {
                 return curr;
             }
         }

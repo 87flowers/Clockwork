@@ -20,6 +20,7 @@ public:
         m_history(history),
         m_movegen(pos),
         m_tt_move(tt_move),
+        m_threat_move(ss->threat),
         m_killer(ss->killer),
         m_ply(ply),
         m_stack(ss) {
@@ -36,6 +37,7 @@ public:
 private:
     enum class Stage {
         EmitTTMove,
+        EmitThreatMove,
         GenerateMoves,
         ScoreNoisy,
         EmitGoodNoisy,
@@ -45,6 +47,18 @@ private:
         EmitBadNoisy,
         End,
     };
+
+    bool is_early_refutation(Move m) {
+        return m == m_tt_move || m == m_threat_move;
+    }
+
+    bool is_late_refutation(Move m) {
+        return m == m_killer;
+    }
+
+    bool is_refutation(Move m) {
+        return is_early_refutation(m) || is_late_refutation(m);
+    }
 
     void                 generate_moves();
     std::pair<Move, i32> pick_next(MoveList& moves);
@@ -65,6 +79,7 @@ private:
     std::array<i32, 256> m_scores;
 
     Move           m_tt_move;
+    Move           m_threat_move;
     Move           m_killer;
     i32            m_ply;
     Search::Stack* m_stack;

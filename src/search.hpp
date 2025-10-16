@@ -61,7 +61,9 @@ private:
 struct Stack {
     Value          static_eval = 0;
     Move           killer      = Move::none();
+    Move           threat      = Move::none();
     Move           excluded_move;
+    Move           best_move       = Move::none();
     ContHistEntry* cont_hist_entry = nullptr;
     i32            fail_high_count = 0;
     PV             pv;
