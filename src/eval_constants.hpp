@@ -74,13 +74,15 @@ inline const PParam PAWN_THREAT_BISHOP = S(211, 116);
 inline const PParam PAWN_THREAT_ROOK   = S(194, 55);
 inline const PParam PAWN_THREAT_QUEEN  = S(172, -61);
 
-inline const PParam KNIGHT_THREAT_BISHOP = S(103, 69);
-inline const PParam KNIGHT_THREAT_ROOK   = S(244, 0);
-inline const PParam KNIGHT_THREAT_QUEEN  = S(152, -67);
+inline const std::array<PParam, 2> KNIGHT_THREAT_KNIGHT = {S(0, 0), S(0, 0)};
+inline const std::array<PParam, 2> KNIGHT_THREAT_BISHOP = {S(103, 69), S(103, 69)};
+inline const std::array<PParam, 2> KNIGHT_THREAT_ROOK   = {S(244, 0), S(244, 0)};
+inline const std::array<PParam, 2> KNIGHT_THREAT_QUEEN  = {S(152, -67), S(152, -67)};
 
-inline const PParam BISHOP_THREAT_KNIGHT = S(106, 24);
-inline const PParam BISHOP_THREAT_ROOK   = S(241, 49);
-inline const PParam BISHOP_THREAT_QUEEN  = S(190, 44);
+inline const std::array<PParam, 2> BISHOP_THREAT_KNIGHT = {S(106, 24), S(106, 24)};
+inline const std::array<PParam, 2> BISHOP_THREAT_BISHOP = {S(0, 0), S(0, 0)};
+inline const std::array<PParam, 2> BISHOP_THREAT_ROOK   = {S(241, 49), S(241, 49)};
+inline const std::array<PParam, 2> BISHOP_THREAT_QUEEN  = {S(190, 44), S(190, 44)};
 
 inline const std::array<PParam, 9> BISHOP_PAWNS = {
     S(-5, -12), S(-8, -4), S(-7, -13), S(-12, -23), S(-18, -27), S(-22, -34), S(-22, -41), S(-28, -40), S(-38, -49),
