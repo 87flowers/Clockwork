@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - lps-test-pre
   pull_request:
     branches:
       - main

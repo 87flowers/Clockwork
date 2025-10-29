@@ -8,7 +8,7 @@ on:
 
 jobs:
   create_prerelease:
-    if: github.repository == 'official-clockwork/Clockwork' && github.ref == 'refs/heads/main'
+    if: github.repository == '87flowers/Clockwork' && github.ref == 'refs/heads/lps-test-pre'
     runs-on: ubuntu-latest
     permissions:
       contents: write
