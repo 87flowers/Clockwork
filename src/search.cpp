@@ -445,6 +445,7 @@ Value Worker::search(
     // Reuse TT score as a better positional evaluation
     auto tt_adjusted_eval = ss->static_eval;
     if (tt_data && tt_data->bound() != Bound::None && !is_mate_score(tt_data->score)
+        && (!is_mate_score(tt_data->eval) || is_in_check)
         && tt_data->bound() != (tt_data->score > ss->static_eval ? Bound::Upper : Bound::Lower)) {
         tt_adjusted_eval = tt_data->score;
     }
