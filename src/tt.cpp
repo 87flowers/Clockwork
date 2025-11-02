@@ -67,7 +67,7 @@ TT::~TT() {
 std::optional<TTData> TT::probe(const Position& pos, i32 ply) const {
     size_t      idx   = mulhi64(pos.get_hash_key(), m_size);
     const auto& entry = m_entries[idx];
-    if (entry.key16 == shrink_key(pos.get_hash_key()) && entry.eval != -VALUE_INF) {
+    if (entry.key16 == shrink_key(pos.get_hash_key()) && entry.eval != VALUE_INF) {
         TTData data = {.eval       = entry.eval,
                        .move       = entry.move,
                        .score      = score_from_tt(entry.score, ply),

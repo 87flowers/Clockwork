@@ -15,7 +15,7 @@ struct TTEntry {
     u16  key16      = 0;
     Move move       = Move::none();
     i16  score      = 0;
-    i16  eval       = -VALUE_INF;
+    i16  eval       = VALUE_INF;
     u8   depth      = 0;
     u8   ttpv_bound = 0;
 };
