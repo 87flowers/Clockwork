@@ -868,6 +868,11 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
 
     // Iterate over the move list
     for (Move m = moves.next(); m != Move::none(); m = moves.next()) {
+        // QS LMP
+        if (!is_being_mated_score(best_value) && moves_searched >= 3) {
+            break;
+        }
+
         // Bad noisies pruning
         if (!is_being_mated_score(best_value) && moves.stage() == MovePicker::Stage::EmitBadNoisy) {
             break;
