@@ -501,7 +501,7 @@ Value Worker::search(
 
     // TT Probcut
     if (!ttpv && !excluded && !is_in_check && tt_data && !is_mate_score(tt_data->score)
-        && tt_data->score >= beta + 600 && tt_data->depth >= depth - 4
+        && tt_data->score >= beta + 400 && tt_data->depth >= depth - 4
         && moves.is_legal(tt_data->move)) {
         return tt_data->score;
     }
