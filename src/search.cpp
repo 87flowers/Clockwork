@@ -500,8 +500,8 @@ Value Worker::search(
     MovePicker moves{pos, m_td.history, tt_data ? tt_data->move : Move::none(), ply, ss};
 
     // TT Probcut
-    if (!ttpv && !excluded && !is_in_check && tt_data && !is_mate_score(tt_data->score)
-        && tt_data->score >= beta + 400 && tt_data->depth >= depth - 4
+    if (!ttpv && !excluded && tt_data && !is_mate_score(tt_data->score)
+        && tt_data->score >= beta + 700 && tt_data->depth >= depth - 4
         && moves.is_legal(tt_data->move)) {
         return tt_data->score;
     }
