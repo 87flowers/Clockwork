@@ -471,17 +471,6 @@ Position Position::move(Move m, PsqtState* psqtState) const {
         psqtState->apply_updates(new_pos, updates);
     }
 
-    // Check piece counts
-    for (const Color color : {Color::White, Color::Black}) {
-        for (const PieceType ptype : {PieceType::Pawn, PieceType::Knight, PieceType::Bishop,
-                                      PieceType::Rook, PieceType::Queen, PieceType::King}) {
-            if (new_pos.m_piece_counts[static_cast<usize>(color)][static_cast<usize>(ptype) - 1]
-                != static_cast<u8>(new_pos.piece_list(color).mask_eq(ptype).popcount())) {
-                std::terminate();
-            }
-        }
-    }
-
     return new_pos;
 }
 
