@@ -39,10 +39,8 @@ void Position::incrementally_remove_piece(bool         color,
         }
     }
     updates.removes.push_back({pcolor, ptype, from});
-    m_board[from] = Place::empty();
-
-    // Update piece count
     --m_piece_counts[static_cast<usize>(pcolor)][static_cast<usize>(ptype) - 1];
+    m_board[from] = Place::empty();
 }
 
 void Position::incrementally_add_piece(bool color, Place p, Square to, PsqtUpdates& updates) {
@@ -65,12 +63,10 @@ void Position::incrementally_add_piece(bool color, Place p, Square to, PsqtUpdat
         }
     }
     updates.adds.push_back({pcolor, ptype, to});
+    ++m_piece_counts[static_cast<usize>(pcolor)][static_cast<usize>(ptype) - 1];
 
     m8x64 m = toggle_rays(to);
     add_attacks(color, p.id(), to, p.ptype(), m);
-
-    // Update piece count
-    ++m_piece_counts[static_cast<usize>(pcolor)][static_cast<usize>(ptype) - 1];
 }
 
 void Position::incrementally_mutate_piece(
@@ -93,6 +89,8 @@ void Position::incrementally_mutate_piece(
         }
     }
     updates.removes.push_back({m_board[sq].color(), ptype, sq});
+    --m_piece_counts[static_cast<usize>(m_board[sq].color())][static_cast<usize>(ptype) - 1];
+
     m_board[sq]       = p;
     ptype             = m_board[sq].ptype();
     u64 add_piece_key = Zobrist::piece_square_zobrist[static_cast<usize>(m_board[sq].color())]
@@ -110,13 +108,10 @@ void Position::incrementally_mutate_piece(
         }
     }
     updates.adds.push_back({p.color(), p.ptype(), sq});
+    ++m_piece_counts[static_cast<usize>(p.color())][static_cast<usize>(p.ptype()) - 1];
 
     remove_attacks(old_color, old_id);
     add_attacks(new_color, p.id(), sq, p.ptype());
-
-    // Update piece count
-    --m_piece_counts[static_cast<usize>(old_color)][static_cast<usize>(ptype) - 1];
-    ++m_piece_counts[static_cast<usize>(new_color)][static_cast<usize>(ptype) - 1];
 }
 
 void Position::incrementally_move_piece(
@@ -145,6 +140,8 @@ void Position::incrementally_move_piece(
         }
     }
     updates.removes.push_back({m_board[from].color(), ptype, from});
+    --m_piece_counts[static_cast<usize>(m_board[from].color())][static_cast<usize>(ptype) - 1];
+
     m_board[from]     = Place::empty();
     m_board[to]       = p;
     u64 add_piece_key = Zobrist::piece_square_zobrist[static_cast<usize>(m_board[to].color())]
@@ -162,6 +159,7 @@ void Position::incrementally_move_piece(
         }
     }
     updates.adds.push_back({p.color(), p.ptype(), to});
+    ++m_piece_counts[static_cast<usize>(p.color())][static_cast<usize>(p.ptype()) - 1];
 
     u8x64 dst_ray_places = dst_ray_coords.swizzle(m_board.to_vector());
 
@@ -226,10 +224,6 @@ void Position::incrementally_move_piece(
     m_attack_table[1].raw ^= (src_at & src_color) ^ (dst_at & dst_color);
 
     add_attacks(color, p.id(), to, p.ptype(), ret);
-
-    // Update piece count (promotion could change piece type)
-    --m_piece_counts[static_cast<usize>(color)][static_cast<usize>(ptype) - 1];
-    ++m_piece_counts[static_cast<usize>(color)][static_cast<usize>(p.ptype()) - 1];
 }
 
 void Position::remove_attacks(bool color, PieceId id) {
@@ -475,6 +469,17 @@ Position Position::move(Move m, PsqtState* psqtState) const {
 
     if constexpr (UPDATE_PSQT) {
         psqtState->apply_updates(new_pos, updates);
+    }
+
+    // Check piece counts
+    for (const Color color : {Color::White, Color::Black}) {
+        for (const PieceType ptype : {PieceType::Pawn, PieceType::Knight, PieceType::Bishop,
+                                      PieceType::Rook, PieceType::Queen, PieceType::King}) {
+            if (new_pos.m_piece_counts[static_cast<usize>(color)][static_cast<usize>(ptype) - 1]
+                != static_cast<u8>(new_pos.piece_list(color).mask_eq(ptype).popcount())) {
+                std::terminate();
+            }
+        }
     }
 
     return new_pos;
@@ -881,7 +886,7 @@ std::optional<Position> Position::parse(std::string_view board,
     // Set piece counts
     for (const Color color : {Color::White, Color::Black}) {
         for (const PieceType ptype : {PieceType::Pawn, PieceType::Knight, PieceType::Bishop,
-                                PieceType::Rook, PieceType::Queen, PieceType::King}) {
+                                      PieceType::Rook, PieceType::Queen, PieceType::King}) {
             result.m_piece_counts[static_cast<usize>(color)][static_cast<usize>(ptype) - 1] =
               static_cast<u8>(result.piece_list(color).mask_eq(ptype).popcount());
         }
