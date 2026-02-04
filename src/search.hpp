@@ -8,11 +8,12 @@
 #include "tt.hpp"
 #include "util/static_vector.hpp"
 #include "util/types.hpp"
-#include <barrier>
+#include <atomic>
 #include <iosfwd>
 #include <memory>
-#include <shared_mutex>
 #include <thread>
+
+#include <iostream>
 
 namespace Clockwork {
 namespace Search {
@@ -93,21 +94,43 @@ struct ThreadData {
     }
 };
 
+enum Message {
+    go,
+    exit,
+    reset,
+};
+
+struct Futex {
+    inline static constexpr u32 threads_mask    = 0x3FFFFFFF;
+    inline static constexpr u32 uci_waiting_bit = 0x40000000;
+    inline static constexpr u32 generation_bit  = 0x80000000;
+
+    u32  threads;
+    bool uci_waiting;
+    bool generation;
+
+    static Futex unpack(u32 raw) {
+        Futex f;
+        f.threads     = raw & threads_mask;
+        f.uci_waiting = raw & uci_waiting_bit;
+        f.generation  = raw & generation_bit;
+        return f;
+    }
+
+    u32 pack() const {
+        u32 raw = 0;
+        raw |= threads & threads_mask;
+        raw |= uci_waiting ? uci_waiting_bit : 0;
+        raw |= generation ? generation_bit : 0;
+        return raw;
+    }
+};
+
 class Searcher {
 public:
     SearchLimits   search_limits;
     SearchSettings settings;
     TT             tt;
-
-    // We use a shared_mutex to ensure proper mutual thread exclusion.and avoid races.
-    // The UCI thread only ever obtains exclusive access (using std::unique_lock);
-    // search threads only ever obtain shared access (using std::shared_lock).
-    // This ensures that the two classes of thread never step on each other.
-    std::shared_mutex mutex;
-
-    using BarrierPtr = std::unique_ptr<std::barrier<>>;
-    BarrierPtr idle_barrier;
-    BarrierPtr started_barrier;
 
     Searcher();
     ~Searcher();
@@ -126,7 +149,16 @@ public:
     }
 
 private:
+    friend class Worker;
+
+    Futex futex_wait();
+    void  futex_send(Futex f);
+
+    Position                                  m_root_position;
+    RepetitionInfo                            m_repetition_info;
     std::vector<unique_ptr_huge_page<Worker>> m_workers;
+    Message                                   m_message = Message::reset;
+    std::atomic<u32>                          m_futex   = 0;
 };
 
 class alignas(128) Worker {
@@ -137,16 +169,11 @@ public:
     Worker(Searcher& searcher, ThreadType thread_type);
     ~Worker();
 
-    void exit();
-
     void prepare();
     void start_searching();
 
     void set_stopped() {
         m_stopped = true;
-    }
-    void reset_thread_data() {
-        m_td = {};
     }
 
     [[nodiscard]] ThreadType thread_type() const {
@@ -180,10 +207,10 @@ private:
     SearchLimits             m_search_limits;
     ThreadData               m_td;
     std::atomic<bool>        m_stopped;
-    std::atomic<bool>        m_exiting;
     std::array<u64, 64 * 64> m_node_counts;
     Depth                    m_seldepth;
     bool                     m_in_nmp_verification = false;
+    bool                     m_generation          = false;
 
     template<bool IS_MAIN>
     Move iterative_deepening(const Position& root_position);

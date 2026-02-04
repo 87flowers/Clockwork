@@ -47,9 +47,8 @@ std::ostream& operator<<(std::ostream& os, const PV& pv) {
     return os;
 }
 
-Searcher::Searcher() :
-    idle_barrier(std::make_unique<std::barrier<>>(1)),
-    started_barrier(std::make_unique<std::barrier<>>(1)) {
+Searcher::Searcher() {
+    initialize(1);
 }
 
 Searcher::~Searcher() {
@@ -57,27 +56,23 @@ Searcher::~Searcher() {
 }
 
 void Searcher::set_position(const Position& root_position, const RepetitionInfo& repetition_info) {
-    std::unique_lock lock_guard{mutex};
-
-    for (auto& worker : m_workers) {
-        worker->root_position   = root_position;
-        worker->repetition_info = repetition_info;
-    }
+    wait();
+    m_root_position   = root_position;
+    m_repetition_info = repetition_info;
 }
 
 void Searcher::launch_search(SearchSettings settings_) {
-    {
-        std::unique_lock lock_guard{mutex};
+    Futex f = futex_wait();
 
-        settings = settings_;
-        tt.increment_age();
-
-        for (auto& worker : m_workers) {
-            worker->prepare();
-        }
+    for (auto& worker : m_workers) {
+        worker->prepare();
     }
-    idle_barrier->arrive_and_wait();
-    started_barrier->arrive_and_wait();
+
+    m_message = Message::go;
+    settings  = settings_;
+    tt.increment_age();
+
+    futex_send(f);
 }
 
 void Searcher::stop_searching() {
@@ -87,8 +82,7 @@ void Searcher::stop_searching() {
 }
 
 void Searcher::wait() {
-    // Wait for ability to acquire exclusive access to mutex.
-    std::unique_lock lock_guard{mutex};
+    futex_wait();
 }
 
 Value Searcher::wait_for_score() {
@@ -96,8 +90,8 @@ Value Searcher::wait_for_score() {
     if (m_workers.empty() || m_workers[0]->thread_type() != ThreadType::MAIN) {
         throw std::logic_error("wait_for_score can only be called from the main thread");
     }
-    // Protect the read of root_score with a unique_lock.
-    std::unique_lock lock_guard{mutex};
+
+    wait();
     // Return the final score from the main thread's search.
     return m_workers[0]->get_thread_data().root_score;
 }
@@ -106,17 +100,14 @@ void Searcher::initialize(size_t thread_count) {
     if (m_workers.size() == thread_count) {
         return;
     }
-    {
-        std::unique_lock lock_guard{mutex};
-        for (auto& worker : m_workers) {
-            worker->exit();
-        }
-        idle_barrier->arrive_and_wait();
-        m_workers.clear();
-    }
 
-    idle_barrier    = std::make_unique<std::barrier<>>(1 + thread_count);
-    started_barrier = std::make_unique<std::barrier<>>(1 + thread_count);
+    Futex f   = futex_wait();
+    m_message = Message::exit;
+    futex_send(f);
+    futex_wait();
+
+    m_workers.clear();
+    m_futex.store(0);
 
     if (thread_count > 0) {
         m_workers.push_back(make_unique_huge_page<Worker>(*this, ThreadType::MAIN));
@@ -131,11 +122,30 @@ void Searcher::exit() {
 }
 
 void Searcher::reset() {
-    std::unique_lock lock_guard{mutex};
-    for (auto& worker : m_workers) {
-        worker->reset_thread_data();
-    }
+    Futex f   = futex_wait();
+    m_message = Message::reset;
     tt.clear();
+    futex_send(f);
+}
+
+Futex Searcher::futex_wait() {
+    Futex f = Futex::unpack(m_futex.load());
+    if (f.threads > 0) {
+        f = Futex::unpack(m_futex.fetch_or(Futex::uci_waiting_bit));
+        while (f.threads > 0) {
+            m_futex.wait(f.pack());
+            f = Futex::unpack(m_futex.load());
+        }
+    }
+    return f;
+}
+
+void Searcher::futex_send(Futex f) {
+    f.generation  = !f.generation;
+    f.uci_waiting = false;
+    f.threads     = static_cast<u32>(m_workers.size());
+    m_futex.store(f.pack());
+    m_futex.notify_all();
 }
 
 u64 Searcher::node_count() {
@@ -150,7 +160,6 @@ Worker::Worker(Searcher& searcher, ThreadType thread_type) :
     m_searcher(searcher),
     m_thread_type(thread_type) {
     m_stopped = false;
-    m_exiting = false;
     m_thread  = std::thread(&Worker::thread_main, this);
 }
 
@@ -173,22 +182,37 @@ bool Worker::check_tm_hard_limit() {
     return false;
 }
 
-void Worker::exit() {
-    m_exiting = true;
-}
-
 void Worker::thread_main() {
-    while (true) {
-        m_searcher.idle_barrier->arrive_and_wait();
-
-        if (m_exiting) {
-            return;
+    bool exit = false;
+    while (!exit) {
+        while (true) {
+            Futex f = Futex::unpack(m_searcher.m_futex.load());
+            if (f.generation != m_generation) {
+                m_generation = f.generation;
+                break;
+            }
+            m_searcher.m_futex.wait(f.pack());
         }
-        {
-            std::shared_lock lock_guard{m_searcher.mutex};
-            (void)m_searcher.started_barrier->arrive();
 
+        switch (m_searcher.m_message) {
+        case Message::exit:
+            exit = true;
+            break;
+
+        case Message::go:
+            root_position   = m_searcher.m_root_position;
+            repetition_info = m_searcher.m_repetition_info;
             start_searching();
+            break;
+
+        case Message::reset:
+            m_td = {};
+            break;
+        }
+
+        Futex f = Futex::unpack(m_searcher.m_futex.fetch_sub(1));
+        if (f.uci_waiting && f.threads == 1) {
+            m_searcher.m_futex.notify_all();
         }
     }
 }
