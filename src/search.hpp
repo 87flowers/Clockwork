@@ -99,15 +99,9 @@ public:
     SearchSettings settings;
     TT             tt;
 
-    // We use a shared_mutex to ensure proper mutual thread exclusion.and avoid races.
-    // The UCI thread only ever obtains exclusive access (using std::unique_lock);
-    // search threads only ever obtain shared access (using std::shared_lock).
-    // This ensures that the two classes of thread never step on each other.
-    std::shared_mutex mutex;
-
     using BarrierPtr = std::unique_ptr<std::barrier<>>;
-    BarrierPtr idle_barrier;
-    BarrierPtr started_barrier;
+    BarrierPtr           idle_barrier;
+    std::atomic<int32_t> futex;
 
     Searcher();
     ~Searcher();
