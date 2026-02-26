@@ -775,9 +775,12 @@ Value Worker::search(
                 reduction = std::min(reduction, tuned::lmr_max_red);
             }
 
+            const bool overextend = reduction < -3072 && moves_played <= 3;
+
             reduction /= 1024;
 
-            Depth reduced_depth = std::clamp<Depth>(new_depth - reduction, 1, new_depth);
+            Depth reduced_depth =
+              std::clamp<Depth>(new_depth - reduction, 1, new_depth + overextend);
             value = -search<IS_MAIN, false>(pos_after, ss + 1, -alpha - 1, -alpha, reduced_depth,
                                             ply + 1, true);
             if (value > alpha) {
