@@ -25,7 +25,7 @@ public:
 
     // second hash function
     [[nodiscard]] static constexpr usize h2(HashKey key) {
-        return static_cast<usize>((key >> 16) & 0x1FFF);
+        return static_cast<usize>((key >> 13) & 0x1FFF);
     }
 
     // initialize the cuckoo hash tables
